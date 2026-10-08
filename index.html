@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stator apps</title>
+<style>
+body{margin:0;background:#fffdf6;font-family:"Patrick Hand","Comic Sans MS","Segoe Print",cursive;color:#222;font-size:20px}
+.w{max-width:440px;margin:0 auto;padding:18px}
+h1{font-size:28px;margin:6px 0 14px}
+.b{display:block;width:100%;box-sizing:border-box;text-align:center;text-decoration:none;color:#222;font:inherit;font-size:22px;padding:14px;margin:12px 0;border:2.5px solid #333;border-radius:255px 15px 225px 15px/15px 225px 15px 255px;background:#e6f2ff;cursor:pointer}
+.b.g{background:#e8f7e4}.b.y{background:#fff3cc}.b.p{background:#fde7ef}
+small{color:#666}
+</style></head><body><div class="w">
+<h1>Tum kaun ho?</h1>
+<small>Naam chuno, ek baar. Baad mein upar "naam badlo" se badal sakte ho.</small>
+<div id="c"></div>
+<script>
+const APP1=['Suman','Dinesh','Ajeet','Siraj','Sunil'], APP2=['Pandey ji','Sunil'];
+const colors={Siraj:'g',Suman:'',Dinesh:'g',Ajeet:'y',Sunil:'p','Pandey ji':''};
+const c=document.getElementById('c');
+function btn(txt,href,cls,name){const a=document.createElement('a');a.className='b '+cls;a.textContent=txt;a.href=href;
+ a.onclick=()=>localStorage.setItem('wa_name',name);c.appendChild(a);}
+const h=(t)=>{const e=document.createElement('h1');e.style.fontSize='22px';e.textContent=t;c.appendChild(e)};
+h('App 1 - Winding (contractor)');
+APP1.forEach(n=>btn(n,'app1.html',colors[n],n));
+h('App 2 - Motor + Dispatch');
+APP2.forEach(n=>btn(n,'app2.html',colors[n],n));
+</script></div></body></html>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>App 2 - Motor + Dispatch</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fffdf6;font-family:"Patrick Hand","Comic Sans MS","Segoe Print",cursive;color:#222;font-size:19px}
+.w{max-width:460px;margin:0 auto;padding:14px}
+h1{font-size:26px;margin:4px 0}h2{font-size:21px;margin:0 0 8px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.top a{color:#555;font-size:16px}
+.box{border:2.5px solid #333;border-radius:255px 15px 225px 15px/15px 225px 15px 255px;padding:12px 14px;margin:12px 0;background:#e6f2ff}
+.box.g{background:#e8f7e4}.box.y{background:#fff3cc}.box.p{background:#fde7ef}
+table{width:100%;border-collapse:collapse;font-size:17px}
+th,td{padding:5px 3px;border-bottom:1.5px dashed #888;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:normal;color:#444}
+tr.tot td{border-top:2.5px solid #333;border-bottom:none;font-weight:bold}
+input,select{font:inherit;font-size:19px;width:100%;padding:8px;margin:4px 0 8px;border:2px solid #333;border-radius:12px 4px 12px 4px;background:#fff}
+button{font:inherit;font-size:20px;padding:10px 16px;border:2.5px solid #333;border-radius:255px 15px 225px 15px/15px 225px 15px 255px;background:#fff3cc;cursor:pointer}
+button.w100{width:100%}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.tabs button{flex:1 1 40%;background:#fff}.tabs button.on{background:#ffe08a}
+.big{font-size:30px;font-weight:bold}.bad{color:#c0392b;font-weight:bold}.ok{color:#1e8449}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.del{padding:0 8px;font-size:16px;background:#fff;border-width:1.5px}
+.err{color:#c0392b}
+small,.mut{color:#666;font-size:16px}
+#msg{position:sticky;top:0;background:#fff3cc;padding:6px;text-align:center;display:none;border:2px solid #333}
+</style></head><body><div class="w">
+<div id="msg"></div>
+<div class="top"><h1 id="hd">App 2</h1><a href="index.html">naam badlo</a></div>
+<div class="tabs"><button id="t1" class="on">Dispatch</button><button id="t2">Report</button></div>
+<div id="err" class="err"></div>
+<div id="p1">
+ <div class="box g"><h2>Winding mili (App 1 se)</h2><div id="wind"></div></div>
+ <div class="box"><h2>Bush / Capacitor</h2><div id="parts"></div></div>
+ <div class="box y"><h2>Dispatch</h2>
+  <div class="row"><div><label>Motor gaye</label><input id="d_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="d_d" type="date" min="2026-10-01"></div></div>
+  <label>Kitne motor mein kuppa laga (har motor mein nahi lagta)</label><input id="d_kup" type="number" inputmode="numeric" min="0" placeholder="0">
+  <label>Note (optional)</label><input id="d_note" maxlength="100">
+  <button class="w100" id="d_save">Save</button><div class="err" id="d_err"></div>
+ </div>
+ <div class="box p"><h2>Dispatch entries</h2><div id="dlist"></div></div>
+</div>
+<div id="p2" style="display:none">
+ <div class="box"><h2>Bush + Capacitor report</h2>
+  <div class="mut">Rule: 1 motor = 2 bush + 1 capacitor</div>
+  <div class="row"><div><label>Se</label><input id="r_from" type="date" min="2026-10-01"></div><div><label>Tak</label><input id="r_to" type="date" min="2026-10-01"></div></div>
+ </div>
+ <div id="rep"></div>
+</div>
+<script>
+const START='2026-10-01';
+const ME=localStorage.getItem('wa_name');
+if(ME!=='Pandey ji'&&ME!=='Sunil'){location.href='index.html';}
+let rows=[],mid=[];
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>Number(n).toLocaleString('en-IN');
+const today=()=>{const d=new Date();const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);let s=z.toISOString().slice(0,10);return s<START?START:s};
+const dm=d=>d.slice(8,10)+'/'+d.slice(5,7);
+const sum=a=>a.reduce((s,x)=>s+x,0);
+function msg(t){const m=document.getElementById('msg');m.textContent=t;m.style.display='block';setTimeout(()=>m.style.display='none',3500)}
+async function api(u,opt){const r=await fetch(u,opt);const j=await r.json();if(!r.ok)throw new Error(j.error||'error');return j}
+const $=id=>document.getElementById(id);
+$('t1').onclick=()=>show(1);$('t2').onclick=()=>show(2);
+function show(n){$('p1').style.display=n===1?'':'none';$('p2').style.display=n===2?'':'none';$('t1').className=n===1?'on':'';$('t2').className=n===2?'on':''}
+const myDisp=()=>rows.filter(r=>r.kind==='dispatch'&&r.contractor===ME);
+const myMid=cat=>mid.filter(r=>r.contractor===ME&&r.category===cat);
+function extra(){
+ const t=totals();let h='';
+ [['cover','Cover',2*t.motors,'motor x 2'],['kuppa','Kuppa',t.kup,'kuppa wale motor x 1']].forEach(([c,nm,laga,how])=>{
+  const by={};myMid(c).forEach(r=>by[r.item]=(by[r.item]||0)+r.qty);
+  const ks=Object.keys(by).sort(),liya=sum(ks.map(k=>by[k]));
+  h+='<h2 style="margin-top:12px">'+nm+'</h2>';
+  h+='<table>'+ks.map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(by[k])+'</td></tr>').join('')+'</table>';
+  h+='<table><tr><th></th><th>Liya</th><th>Laga</th><th>Bacha</th></tr><tr class="tot"><td>Total</td><td>'+fmt(liya)+'</td><td>'+fmt(laga)+'</td><td'+(liya-laga<0?' class="bad"':'')+'>'+fmt(liya-laga)+'</td></tr></table><div class="mut">Laga = '+how+' (apne aap)</div>';
+ });
+ return h;
+}
+function totals(){
+ const motors=sum(myDisp().map(r=>r.qty));
+ const b=sum(myMid('bush').map(r=>r.qty)),c=sum(myMid('capacitor').map(r=>r.qty));
+ return {motors,b,c,bl:motors*2,cl:motors,kup:sum(myDisp().map(r=>r.kuppa||0))};
+}
+function render(){
+ $('hd').textContent='App 2 - '+ME;
+ // winding received
+ const w={};rows.filter(r=>r.kind==='sent'&&r.party===ME).forEach(r=>w[r.stype]=(w[r.stype]||0)+r.qty);
+ const wk=Object.keys(w).sort();
+ let h=wk.length?'<table><tr><th>Type</th><th>Winding mili</th></tr>'+wk.map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(w[k])+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(sum(wk.map(k=>w[k])))+'</td></tr></table>':'<div class="mut">Abhi koi winding nahi aayi.</div>';
+ $('wind').innerHTML=h;
+ const t=totals();
+ $('parts').innerHTML='<table><tr><th></th><th>Liya</th><th>Laga</th><th>Bacha</th></tr>'+
+  '<tr><td>Bush 034</td><td>'+fmt(t.b)+'</td><td>'+fmt(t.bl)+'</td><td'+(t.b-t.bl<0?' class="bad"':'')+'>'+fmt(t.b-t.bl)+'</td></tr>'+
+  '<tr><td>Capacitor</td><td>'+fmt(t.c)+'</td><td>'+fmt(t.cl)+'</td><td'+(t.c-t.cl<0?' class="bad"':'')+'>'+fmt(t.c-t.cl)+'</td></tr></table>'+
+  '<div class="mut">Liya = Midland se (1 Oct se). Laga = motor gaye x 2 bush, x 1 capacitor (apne aap).</div>'+extra();
+ const dl=myDisp().slice().reverse();
+ $('dlist').innerHTML=dl.length?'<table><tr><th>Date</th><th>Motor</th><th></th></tr>'+dl.map(r=>'<tr><td>'+dm(r.d)+(r.kuppa?' <span class="mut">(kuppa '+fmt(r.kuppa)+')</span>':'')+(r.note?' <span class="mut">'+esc(r.note)+'</span>':'')+'</td><td>'+fmt(r.qty)+'</td><td><button class="del" onclick="del('+r.id+')">x</button></td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(t.motors)+'</td><td></td></tr></table>':'<div class="mut">Kuch nahi.</div>';
+ report();
+}
+function extraRange(from,to){
+ let h='';
+ [['cover','Cover',x=>2*x.m,'motor x 2'],['kuppa','Kuppa',x=>x.k,'kuppa wale motor x 1']].forEach(([c,nm,lf,how])=>{
+  const byD={};
+  const g=d=>byD[d]||(byD[d]={m:0,k:0,l:0});
+  myMid(c).forEach(r=>g(r.date).l+=r.qty);
+  myDisp().forEach(r=>{g(r.d).m+=r.qty;g(r.d).k+=(r.kuppa||0)});
+  let open=0,liya=0,laga=0;
+  Object.keys(byD).forEach(d=>{const x=byD[d];if(d<from)open+=x.l-lf(x);else if(d<=to){liya+=x.l;laga+=lf(x)}});
+  const by={};myMid(c).filter(r=>r.date>=from&&r.date<=to).forEach(r=>by[r.item]=(by[r.item]||0)+r.qty);
+  const bacha=open+liya-laga;
+  h+='<h2 style="margin-top:10px">'+nm+'</h2><table>'+Object.keys(by).sort().map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(by[k])+'</td></tr>').join('')+'</table>';
+  h+='<table>'+(open?'<tr><td>Pehle ka bacha</td><td>'+fmt(open)+'</td></tr>':'')+'<tr><td>Liya</td><td>'+fmt(liya)+'</td></tr><tr><td>Laga ('+how+')</td><td>'+fmt(laga)+'</td></tr><tr class="tot"><td>Bacha</td><td'+(bacha<0?' class="bad"':'')+'>'+fmt(bacha)+'</td></tr></table>';
+ });
+ return h;
+}
+function report(){
+ const from=$('r_from').value||START,to=$('r_to').value||'9999-12-31';
+ const t=totals();
+ // sab dates, running balance 1 Oct se
+ const byD={};
+ const g=d=>byD[d]||(byD[d]={b:0,c:0,m:0});
+ mid.filter(r=>r.contractor===ME).forEach(r=>{if(r.category==='bush')g(r.date).b+=r.qty;else if(r.category==='capacitor')g(r.date).c+=r.qty});
+ myDisp().forEach(r=>g(r.d).m+=r.qty);
+ let rb=0,rc=0,list=[];
+ Object.keys(byD).sort().forEach(d=>{const x=byD[d];rb+=x.b-2*x.m;rc+=x.c-x.m;list.push({d,...x,rb,rc})});
+ const vis=list.filter(x=>x.d>=from&&x.d<=to);
+ const S={b:sum(vis.map(x=>x.b)),c:sum(vis.map(x=>x.c)),m:sum(vis.map(x=>x.m))};
+ let open={b:0,c:0};
+ list.filter(x=>x.d<from).forEach(x=>{open.b+=x.b-2*x.m;open.c+=x.c-x.m});
+ const cb=open.b+S.b-2*S.m,cc=open.c+S.c-S.m;
+ let h='<div class="box g"><h2>Bush 034</h2><table><tr><td>Liya</td><td>'+fmt(S.b)+'</td></tr><tr><td>Laga ('+fmt(S.m)+' motor x 2)</td><td>'+fmt(2*S.m)+'</td></tr>'+(open.b?'<tr><td>Pehle ka bacha</td><td>'+fmt(open.b)+'</td></tr>':'')+'<tr class="tot"><td>Bacha</td><td'+(cb<0?' class="bad"':'')+'>'+fmt(cb)+'</td></tr></table></div>';
+ h+='<div class="box y"><h2>Capacitor (total)</h2><table><tr><td>Liya</td><td>'+fmt(S.c)+'</td></tr><tr><td>Laga ('+fmt(S.m)+' motor x 1)</td><td>'+fmt(S.m)+'</td></tr>'+(open.c?'<tr><td>Pehle ka bacha</td><td>'+fmt(open.c)+'</td></tr>':'')+'<tr class="tot"><td>Bacha</td><td'+(cc<0?' class="bad"':'')+'>'+fmt(cc)+'</td></tr></table></div>';
+ h+='<div class="box"><h2>Date-wise</h2>'+(vis.length?'<table><tr><th>Date</th><th>Bush mila</th><th>Cap mila</th><th>Motor gaye</th><th>Bush bacha</th><th>Cap bacha</th></tr>'+vis.map(x=>'<tr><td>'+dm(x.d)+'</td><td>'+(x.b?fmt(x.b):'-')+'</td><td>'+(x.c?fmt(x.c):'-')+'</td><td>'+(x.m?fmt(x.m):'-')+'</td><td'+(x.rb<0?' class="bad"':'')+'>'+fmt(x.rb)+'</td><td'+(x.rc<0?' class="bad"':'')+'>'+fmt(x.rc)+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(S.b)+'</td><td>'+fmt(S.c)+'</td><td>'+fmt(S.m)+'</td><td></td><td></td></tr></table>':'<div class="mut">Is date range mein kuch nahi.</div>')+'</div>';
+ const okb=open.b+S.b-2*S.m===cb,okc=true;
+ h+='<div class="box p"><h2>Hisaab check</h2><div>Bush: '+fmt(open.b+S.b)+' - '+fmt(2*S.m)+' = '+fmt(cb)+' <span class="ok">OK</span></div><div>Capacitor: '+fmt(open.c+S.c)+' - '+fmt(S.m)+' = '+fmt(cc)+' <span class="ok">OK</span></div>'+((cb<0||cc<0)?'<div class="bad">Minus bacha: liya kam ya dispatch zyada likha hai, dekh lo.</div>':'')+'</div>';
+
+ const wr={};rows.filter(r=>r.kind==='sent'&&r.party===ME&&r.d>=from&&r.d<=to).forEach(r=>wr[r.stype]=(wr[r.stype]||0)+r.qty);
+ const wk2=Object.keys(wr).sort();
+ h+='<div class="box y"><h2>Winding mili (App 1 se)</h2>'+(wk2.length?'<table><tr><th>Stamping type</th><th>Winding</th></tr>'+wk2.map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(wr[k])+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(sum(wk2.map(k=>wr[k])))+'</td></tr></table>':'<div class="mut">Is range mein koi winding nahi aayi.</div>')+'</div>';
+ const dd=myDisp().filter(r=>r.d>=from&&r.d<=to);
+ h+='<div class="box p"><h2>Motor dispatch (date-wise)</h2>'+(dd.length?'<table><tr><th>Date</th><th>Motor gaye</th><th>Kuppa wale motor</th></tr>'+dd.map(r=>'<tr><td>'+dm(r.d)+'</td><td>'+fmt(r.qty)+'</td><td>'+(r.kuppa?fmt(r.kuppa):'-')+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(sum(dd.map(r=>r.qty)))+'</td><td>'+fmt(sum(dd.map(r=>r.kuppa||0)))+'</td></tr></table>':'<div class="mut">Is range mein koi dispatch nahi.</div>')+'</div>';
+ h+='<div class="box g"><h2>Cover / Kuppa</h2>'+extraRange(from,to)+'</div>';
+ $('rep').innerHTML=h;
+}
+$('r_from').onchange=$('r_to').onchange=report;
+$('d_d').value=today();
+async function del(id){if(!confirm('Ye entry hata du?'))return;try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id})});await load()}catch(e){msg(e.message)}}
+$('d_save').onclick=async()=>{
+ const kuppa=Number($('d_kup').value||0),qty=Number($('d_qty').value),d=$('d_d').value,note=$('d_note').value,er=$('d_err');er.textContent='';
+ if(!(qty>0)){er.textContent='Motor kitne gaye likho';return}
+ if(!d||d<START){er.textContent='Date 1 Oct 2026 ya baad ki';return}
+ if(kuppa<0||kuppa>qty){er.textContent='Kuppa wale motor, kul motor se zyada nahi ho sakte';return}
+ $('d_save').disabled=true;
+ try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:'dispatch',contractor:ME,qty,kuppa,d,note})});$('d_qty').value='';$('d_kup').value='';$('d_note').value='';msg('Save ho gaya');await load()}catch(e){er.textContent=e.message}
+ $('d_save').disabled=false;
+};
+async function load(){
+ try{const [a,b]=await Promise.all([api('/api/wa'),api('/api/midland').catch(e=>({rows:[],err:e.message}))]);
+  rows=a.rows;mid=b.rows;$('err').textContent=b.err?'Midland se bush/capacitor nahi aaya: '+b.err:(b.extraError?'Cover/kuppa nahi aaya: '+b.extraError:'');render()}
+ catch(e){$('err').textContent='Load nahi hua: '+e.message}
+}
+render();load();
+</script></div></body></html>

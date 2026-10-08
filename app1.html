@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>App 1 - Winding</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fffdf6;font-family:"Patrick Hand","Comic Sans MS","Segoe Print",cursive;color:#222;font-size:19px}
+.w{max-width:460px;margin:0 auto;padding:14px}
+h1{font-size:26px;margin:4px 0}h2{font-size:21px;margin:0 0 8px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.top a{color:#555;font-size:16px}
+.box{border:2.5px solid #333;border-radius:255px 15px 225px 15px/15px 225px 15px 255px;padding:12px 14px;margin:12px 0;background:#e6f2ff}
+.box.g{background:#e8f7e4}.box.y{background:#fff3cc}.box.p{background:#fde7ef}
+table{width:100%;border-collapse:collapse;font-size:17px}
+th,td{padding:5px 3px;border-bottom:1.5px dashed #888;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:normal;color:#444}
+tr.tot td{border-top:2.5px solid #333;border-bottom:none;font-weight:bold}
+input,select{font:inherit;font-size:19px;width:100%;padding:8px;margin:4px 0 8px;border:2px solid #333;border-radius:12px 4px 12px 4px;background:#fff}
+button{font:inherit;font-size:20px;padding:10px 16px;border:2.5px solid #333;border-radius:255px 15px 225px 15px/15px 225px 15px 255px;background:#fff3cc;cursor:pointer}
+button.w100{width:100%}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.tabs button{flex:1 1 40%;background:#fff}.tabs button.on{background:#ffe08a}
+.big{font-size:30px;font-weight:bold}.bad{color:#c0392b;font-weight:bold}.ok{color:#1e8449}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.del{padding:0 8px;font-size:16px;background:#fff;border-width:1.5px}
+.err{color:#c0392b}
+small,.mut{color:#666;font-size:16px}
+#msg{position:sticky;top:0;background:#fff3cc;padding:6px;text-align:center;display:none;border:2px solid #333}
+</style></head><body><div class="w">
+<div id="msg"></div>
+<div class="top"><h1 id="hd">App 1</h1><a href="index.html">naam badlo</a></div>
+<div id="sum"></div>
+<div class="box y">
+ <h2>Nayi entry</h2>
+ <div class="tabs" id="tabs"></div>
+ <div id="form"></div>
+</div>
+<div class="box"><h2>Date-wise entries</h2><div id="list"></div></div>
+<datalist id="types"></datalist>
+<script>
+const START='2026-10-01';
+const ME=localStorage.getItem('wa_name');
+if(!ME||!['Suman','Dinesh','Ajeet','Siraj','Sunil'].includes(ME)){location.href='index.html';}
+const OTHERS=['Suman','Dinesh','Ajeet','Siraj','Sunil'].filter(n=>n!==ME);
+const NEXT=ME==='Sunil'?'Sunil':'Pandey ji';
+const TABS=[['stamp_in','Haath se mili (Midland ke bahar)'],['wound','Winding ki'],['sent',ME==='Sunil'?'Ready (khud ko)':'Pandey ji ko bheji'],['transfer','Dusre ko diya']];
+let rows=[],tab='stamp_in';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>Number(n).toLocaleString('en-IN');
+const today=()=>{const d=new Date();const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);let s=z.toISOString().slice(0,10);return s<START?START:s};
+const dm=d=>d.slice(8,10)+'/'+d.slice(5,7);
+function msg(t){const m=document.getElementById('msg');m.textContent=t;m.style.display='block';setTimeout(()=>m.style.display='none',3500)}
+function calc(){
+ const t={};const g=k=>t[k]||(t[k]={got:0,mili:0,wound:0,sent:0,out:0});
+ rows.forEach(r=>{
+  if(r.kind==='transfer'){
+   if(r.contractor===ME){g(r.stype).out+=r.qty}
+   if(r.party===ME){g(r.stype).got+=r.qty}
+  } else if(r.contractor===ME){
+   const x=g(r.stype);
+   if(r.kind==='stamp_in')x.mili+=r.qty;
+   if(r.kind==='wound')x.wound+=r.qty;
+   if(r.kind==='sent')x.sent+=r.qty;
+  }});
+ Object.values(t).forEach(x=>{x.recv=x.mili+x.got-x.out;x.unp=x.recv-x.wound;x.ready=x.wound-x.sent});
+ return t;
+}
+function render(){
+ document.getElementById('hd').textContent='App 1 - '+ME;
+ const t=calc();const keys=Object.keys(t).sort();
+ document.getElementById('types').innerHTML=[...new Set(rows.map(r=>r.stype).filter(Boolean))].map(x=>'<option value="'+esc(x)+'">').join('');
+ let T={recv:0,wound:0,unp:0,ready:0,sent:0};keys.forEach(k=>{for(const f in T)T[f]+=t[k][f]});
+ let h=(note?'<div class="box err">'+esc(note)+'</div>':'')+'<div class="box g"><h2>Hisaab (1 Oct se)</h2>';
+ if(!keys.length)h+='<div class="mut">Abhi koi entry nahi.</div>';
+ else{h+='<table><tr><th>Type</th><th>Mili</th><th>Winding</th><th>Bachi stamping</th><th>Ready (bhejni)</th></tr>';
+  keys.forEach(k=>{const x=t[k];h+='<tr><td>'+esc(k)+'</td><td>'+fmt(x.recv)+'</td><td>'+fmt(x.wound)+'</td><td'+(x.unp<0?' class="bad"':'')+'>'+fmt(x.unp)+'</td><td'+(x.ready<0?' class="bad"':'')+'>'+fmt(x.ready)+'</td></tr>'});
+  h+='<tr class="tot"><td>Total</td><td>'+fmt(T.recv)+'</td><td>'+fmt(T.wound)+'</td><td>'+fmt(T.unp)+'</td><td>'+fmt(T.ready)+'</td></tr></table>';
+  h+='<div class="mut">Bachi stamping = mili - winding. Ready = winding - '+esc(NEXT)+' ko bheji. Mili = Midland se (apne aap) + dusre contractor se aayi/gayi stamping judi/ghati hui hai.</div>';
+  h+='<div class="mut">'+esc(NEXT)+' ko ab tak bheji: '+fmt(T.sent)+'</div>';}
+ h+='</div>';document.getElementById('sum').innerHTML=h;
+ renderTabs();renderList();
+}
+function renderTabs(){
+ const tb=document.getElementById('tabs');tb.innerHTML='';
+ TABS.forEach(([k,l])=>{const b=document.createElement('button');b.textContent=l;b.className=k===tab?'on':'';b.onclick=()=>{tab=k;renderTabs()};tb.appendChild(b)});
+ let f='<label>Stamping type</label><input id="f_type" list="types" placeholder="jaise 6 soot / 8 soot" autocomplete="off">';
+ if(tab==='transfer')f+='<label>Kisko diya</label><select id="f_party">'+OTHERS.map(n=>'<option>'+n+'</option>').join('')+'</select>';
+ f+='<div class="row"><div><label>Kitni pcs</label><input id="f_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="f_d" type="date" min="'+START+'" value="'+today()+'"></div></div>';
+ f+='<label>Note (optional)</label><input id="f_note" maxlength="100">';
+ f+='<button class="w100" id="save">Save</button><div class="err" id="ferr"></div>';
+ document.getElementById('form').innerHTML=f;
+ document.getElementById('save').onclick=save;
+}
+async function api(opt){const r=await fetch('/api/wa',opt);const j=await r.json();if(!r.ok)throw new Error(j.error||'error');return j}
+let note='';
+async function load(){try{const j=await api();rows=j.rows;note='';if(j.midlandError)note='Midland se stamping nahi aayi: '+j.midlandError;const sk=Object.keys(j.skipped||{});if(sk.length)note+=(note?' | ':'')+'Midland mein in naamo ki stamping gayi par yahan nahi judi: '+sk.join(', ');render()}catch(e){document.getElementById('sum').innerHTML='<div class="box err">Load nahi hua: '+esc(e.message)+'</div>'}}
+async function save(){
+ const stype=document.getElementById('f_type').value.trim(),qty=Number(document.getElementById('f_qty').value),d=document.getElementById('f_d').value,note=document.getElementById('f_note').value;
+ const err=document.getElementById('ferr');err.textContent='';
+ if(!stype){err.textContent='Stamping type likho';return}
+ if(!(qty>0)){err.textContent='Pcs likho';return}
+ if(!d||d<START){err.textContent='Date 1 Oct 2026 ya baad ki';return}
+ const t=calc()[stype]||{unp:0,ready:0};
+ if((tab==='wound'||tab==='transfer')&&qty>t.unp&&!confirm('Bachi stamping '+fmt(t.unp)+' hai, '+fmt(qty)+' likh rahe ho. Phir bhi save?'))return;
+ if(tab==='sent'&&qty>t.ready&&!confirm('Ready winding '+fmt(t.ready)+' hai, '+fmt(qty)+' likh rahe ho. Phir bhi save?'))return;
+ const party=tab==='transfer'?document.getElementById('f_party').value:(tab==='sent'?NEXT:null);
+ const btn=document.getElementById('save');btn.disabled=true;
+ try{await api({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:tab,contractor:ME,party,stype,qty,d,note})});
+  msg('Save ho gaya');await load()}catch(e){err.textContent=e.message;btn.disabled=false}
+}
+async function del(id){if(!confirm('Ye entry hata du?'))return;try{await api({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id})});await load()}catch(e){msg(e.message)}}
+function label(r){
+ const nm=Object.fromEntries(TABS);
+ if(r.src==='midland')return 'Midland se mili';
+ if(r.kind==='transfer')return r.contractor===ME?'Diya: '+r.party:r.contractor+' se mili';
+ if(r.kind==='sent')return NEXT+' ko bheji';
+ return nm[r.kind];
+}
+function renderList(){
+ const mine=rows.filter(r=>r.kind!=='dispatch'&&(r.contractor===ME||r.party===ME&&r.kind==='transfer')).slice().reverse();
+ if(!mine.length){document.getElementById('list').innerHTML='<div class="mut">Kuch nahi.</div>';return}
+ let h='<table><tr><th>Date</th><th>Kya</th><th>Type</th><th>Pcs</th><th></th></tr>';
+ mine.forEach(r=>{const canDel=r.contractor===ME&&!r.src;h+='<tr><td>'+dm(r.d)+'</td><td>'+esc(label(r))+(r.note?'<br><span class="mut">'+esc(r.note)+'</span>':'')+'</td><td>'+esc(r.stype)+'</td><td>'+fmt(r.qty)+'</td><td>'+(canDel?'<button class="del" onclick="del('+r.id+')">x</button>':'')+'</td></tr>'});
+ document.getElementById('list').innerHTML=h+'</table>';
+}
+render();load();
+</script></div></body></html>

@@ -1,0 +1,8 @@
+{
+  "name": "stator-apps",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}
