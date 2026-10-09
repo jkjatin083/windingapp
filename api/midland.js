@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { verify } from './auth.js';
+import { verify } from './_auth.js';
 // Midland ka OPEN read-only route padhta hai (Midland mein kuch nahi badalta).
 const BASE = process.env.MIDLAND_URL || 'https://midlandmetals.vercel.app';
 
