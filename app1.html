@@ -42,6 +42,31 @@ const START='2026-10-01';
 const ME=localStorage.getItem('wa_name');
 const TOKEN=localStorage.getItem('wa_token');
 if(!TOKEN){location.href='index.html';}
+const IS_ADM=(()=>{try{return JSON.parse(atob(TOKEN.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))).a===1}catch(e){return false}})();
+const todayIST=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date());
+const canEdit=r=>IS_ADM||r.d===todayIST();
+function editEntry(id){
+ const r=rows.find(x=>x.id===id);if(!r||!canEdit(r))return;
+ const fixed=r.kind==='made'||r.kind==='mdispatch';
+ const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9;display:flex;align-items:center;justify-content:center;padding:14px';
+ o.innerHTML='<div style="background:#fffdf6;border-radius:12px;padding:16px;width:100%;max-width:420px"><h2 style="margin:0 0 8px">Edit entry</h2>'+
+  (fixed?'<div class="mut">'+esc((r.party||'')+' - '+(r.stype||''))+'</div>':'<label>Type</label><input id="e_t" value="'+esc(r.stype||'')+'">')+
+  '<label>Quantity</label><input id="e_q" type="number" inputmode="numeric" value="'+r.qty+'"><label>Date</label><input id="e_d" type="date" min="2026-10-01" value="'+r.d+'">'+
+  (r.kind==='made'?'<label>Motors with kuppa</label><input id="e_k" type="number" inputmode="numeric" value="'+(r.kuppa||0)+'">':'')+
+  '<label>Note (optional)</label><input id="e_n" maxlength="100" value="'+esc(r.note||'')+'"><div class="err" id="e_err"></div>'+
+  '<div class="row" style="margin-top:10px"><button id="e_c">Cancel</button><button id="e_s">Save changes</button></div></div>';
+ document.body.appendChild(o);
+ const g=i=>document.getElementById(i);
+ g('e_c').onclick=()=>o.remove();
+ g('e_s').onclick=async()=>{
+  const body={action:'edit',id,qty:Number(g('e_q').value),d:g('e_d').value,note:g('e_n').value};
+  if(g('e_t'))body.stype=g('e_t').value.trim();
+  if(g('e_k'))body.kuppa=Number(g('e_k').value||0);
+  g('e_s').disabled=true;
+  try{const x=await authFetch('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await x.json();if(!x.ok)throw new Error(j.error||'error');o.remove();msg('Saved');await load()}
+  catch(e){g('e_err').textContent=e.message;g('e_s').disabled=false}
+ };
+}
 function authFetch(u,o){o=o||{};o.headers=Object.assign({},o.headers||{},{Authorization:'Bearer '+TOKEN});return fetch(u,o).then(r=>{if(r.status===401){localStorage.removeItem('wa_token');location.href='index.html'}return r})}
 if(!ME||!['Suman','Dinesh','Ajeet','Siraj','Sunil'].includes(ME)){location.href='index.html';}
 const OTHERS=['Suman','Dinesh','Ajeet','Siraj','Sunil'].filter(n=>n!==ME);
@@ -124,7 +149,7 @@ function renderList(){
  const mine=rows.filter(r=>r.kind!=='dispatch'&&(r.contractor===ME||r.party===ME&&r.kind==='transfer')).slice().reverse();
  if(!mine.length){document.getElementById('list').innerHTML='<div class="mut">Nothing yet.</div>';return}
  let h='<table><tr><th>Date</th><th>Entry</th><th>Type</th><th>Qty</th><th></th></tr>';
- mine.forEach(r=>{const canDel=r.contractor===ME&&!r.src;h+='<tr><td>'+dm(r.d)+'</td><td>'+esc(label(r))+(r.note?'<br><span class="mut">'+esc(r.note)+'</span>':'')+'</td><td>'+esc(r.stype)+'</td><td>'+fmt(r.qty)+'</td><td>'+(canDel?'<button class="del" onclick="del('+r.id+')">x</button>':'')+'</td></tr>'});
+ mine.forEach(r=>{const canDel=r.contractor===ME&&!r.src;h+='<tr><td>'+dm(r.d)+'</td><td>'+esc(label(r))+(r.note?'<br><span class="mut">'+esc(r.note)+'</span>':'')+'</td><td>'+esc(r.stype)+'</td><td>'+fmt(r.qty)+'</td><td>'+(canDel?(canEdit(r)?'<button class="del" onclick="editEntry('+r.id+')">Edit</button>':'')+(IS_ADM?' <button class="del" onclick="del('+r.id+')">x</button>':''):'')+'</td></tr>'});
  document.getElementById('list').innerHTML=h+'</table>';
 }
 render();load();
