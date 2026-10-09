@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { verify } from './_auth.js';
+import { verify } from './auth.js';
 
 const START = '2026-10-01';
 const KINDS = ['stamp_in', 'wound', 'sent', 'transfer', 'dispatch'];

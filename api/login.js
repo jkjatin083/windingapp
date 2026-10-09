@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { NAMES, sign, hashPin, safeEq } from './_auth.js';
+import { NAMES, sign, hashPin, safeEq } from './auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
