@@ -29,24 +29,34 @@ small,.mut{color:#666;font-size:16px}
 </style></head><body><div class="w">
 <div id="msg"></div>
 <div class="top"><h1 id="hd">App 2</h1><a href="#" id="lo">Log out</a></div>
-<div class="tabs"><button id="t1" class="on"> Dispatch</button><button id="t2">Report</button></div>
+<div class="tabs"><button id="t1" class="on">Motors</button><button id="t2">Report</button></div>
 <div id="err" class="err"></div>
 <div id="p1">
  <div class="box g"><h2>Winding received (from App 1)</h2><div id="wind"></div></div>
  <div class="box"><h2>Parts: Bush and Capacitor</h2><div id="parts"></div></div>
- <div class="box y"><h2>Dispatch</h2>
-  <label>Winding to dispatch (contractor - type)</label><select id="d_src"></select>
+ <div class="box y"><h2>Make motors</h2>
+  <div class="mut">Winding + bush + capacitor + cover (+ kuppa) = motor.</div>
+  <label>Winding to use (contractor - type)</label><select id="d_src"></select>
   <div class="mut" id="d_avail"></div>
-  <div class="row"><div><label>Motors dispatched</label><input id="d_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="d_d" type="date" min="2026-10-01"></div></div>
-  <label>Motors that used a kuppa (not every motor has one)</label><input id="d_kup" type="number" inputmode="numeric" min="0" placeholder="0">
+  <div class="row"><div><label>Motors made</label><input id="d_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="d_d" type="date" min="2026-10-01"></div></div>
+  <label>Motors that have a kuppa (not every motor has one)</label><input id="d_kup" type="number" inputmode="numeric" min="0" placeholder="0">
   <label>Note (optional)</label><input id="d_note" maxlength="100">
-  <button class="w100" id="d_save">Save</button><div class="err" id="d_err"></div>
+  <button class="w100" id="d_save">Save motors made</button><div class="err" id="d_err"></div>
+ </div>
+ <div class="box"><h2>Motors made entries</h2><div id="mlist"></div></div>
+ <div class="box g"><h2>Motors in hand</h2><div id="mstock"></div></div>
+ <div class="box y"><h2>Dispatch motors</h2>
+  <label>Motors made from which winding (contractor - type)</label><select id="x_src"></select>
+  <div id="x_avail" class="mut"></div>
+  <div class="row"><div><label>Motors dispatched</label><input id="x_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="x_d" type="date" min="2026-10-01"></div></div>
+  <label>Note (optional)</label><input id="x_note" maxlength="100">
+  <button class="w100" id="x_save">Save dispatch</button><div class="err" id="x_err"></div>
  </div>
  <div class="box p"><h2>Dispatch entries</h2><div id="dlist"></div></div>
 </div>
 <div id="p2" style="display:none">
  <div class="box"><h2>Parts report</h2>
-  <div class="mut">Rule: 1 motor = 2 bush + 1 capacitor. Kuppa only in the motors entered.</div>
+  <div class="mut">Rule: 1 motor = 2 bush + 1 capacitor + 2 cover. Kuppa only in the motors entered. Parts are used when motors are made.</div>
   <div class="row"><div><label>From</label><input id="r_from" type="date" min="2026-10-01"></div><div><label>To</label><input id="r_to" type="date" min="2026-10-01"></div></div>
  </div>
  <div id="rep"></div>
@@ -56,6 +66,31 @@ const START='2026-10-01';
 const ME=localStorage.getItem('wa_name');
 const TOKEN=localStorage.getItem('wa_token');
 if(!TOKEN){location.href='index.html';}
+const IS_ADM=(()=>{try{return JSON.parse(atob(TOKEN.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))).a===1}catch(e){return false}})();
+const todayIST=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date());
+const canEdit=r=>IS_ADM||r.d===todayIST();
+function editEntry(id){
+ const r=rows.find(x=>x.id===id);if(!r||!canEdit(r))return;
+ const fixed=r.kind==='made'||r.kind==='mdispatch';
+ const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9;display:flex;align-items:center;justify-content:center;padding:14px';
+ o.innerHTML='<div style="background:#fffdf6;border-radius:12px;padding:16px;width:100%;max-width:420px"><h2 style="margin:0 0 8px">Edit entry</h2>'+
+  (fixed?'<div class="mut">'+esc((r.party||'')+' - '+(r.stype||''))+'</div>':'<label>Type</label><input id="e_t" value="'+esc(r.stype||'')+'">')+
+  '<label>Quantity</label><input id="e_q" type="number" inputmode="numeric" value="'+r.qty+'"><label>Date</label><input id="e_d" type="date" min="2026-10-01" value="'+r.d+'">'+
+  (r.kind==='made'?'<label>Motors with kuppa</label><input id="e_k" type="number" inputmode="numeric" value="'+(r.kuppa||0)+'">':'')+
+  '<label>Note (optional)</label><input id="e_n" maxlength="100" value="'+esc(r.note||'')+'"><div class="err" id="e_err"></div>'+
+  '<div class="row" style="margin-top:10px"><button id="e_c">Cancel</button><button id="e_s">Save changes</button></div></div>';
+ document.body.appendChild(o);
+ const g=i=>document.getElementById(i);
+ g('e_c').onclick=()=>o.remove();
+ g('e_s').onclick=async()=>{
+  const body={action:'edit',id,qty:Number(g('e_q').value),d:g('e_d').value,note:g('e_n').value};
+  if(g('e_t'))body.stype=g('e_t').value.trim();
+  if(g('e_k'))body.kuppa=Number(g('e_k').value||0);
+  g('e_s').disabled=true;
+  try{const x=await authFetch('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await x.json();if(!x.ok)throw new Error(j.error||'error');o.remove();msg('Saved');await load()}
+  catch(e){g('e_err').textContent=e.message;g('e_s').disabled=false}
+ };
+}
 function authFetch(u,o){o=o||{};o.headers=Object.assign({},o.headers||{},{Authorization:'Bearer '+TOKEN});return fetch(u,o).then(r=>{if(r.status===401){localStorage.removeItem('wa_token');location.href='index.html'}return r})}
 if(ME!=='Pandey ji'&&ME!=='Sunil'){location.href='index.html';}
 let rows=[],mid=[];
@@ -70,12 +105,14 @@ async function api(u,opt){const r=await authFetch(u,opt);const j=await r.json();
 const $=id=>document.getElementById(id);
 $('t1').onclick=()=>show(1);$('t2').onclick=()=>show(2);
 function show(n){$('p1').style.display=n===1?'':'none';$('p2').style.display=n===2?'':'none';$('t1').className=n===1?'on':'';$('t2').className=n===2?'on':''}
-const myDisp=()=>rows.filter(r=>r.kind==='dispatch'&&r.contractor===ME);
+const myDisp=()=>rows.filter(r=>(r.kind==='dispatch'||r.kind==='mdispatch')&&r.contractor===ME);
+// Motors made = 'made' entries + older dispatch entries that had a winding (they count as made and dispatched)
+const myMade=()=>rows.filter(r=>r.contractor===ME&&(r.kind==='made'||(r.kind==='dispatch'&&r.party&&r.stype)));
 const myMid=cat=>mid.filter(r=>r.contractor===ME&&r.category===cat);
 function coverInfo(from,to){
  const by={};myMid('cover').filter(r=>!from||(r.date>=from&&r.date<=to)).forEach(r=>by[r.item]=(by[r.item]||0)+r.qty);
- const ks=Object.keys(by).sort();
- return '<h2 style="margin-top:12px">Cover (received only)</h2>'+(ks.length?'<table>'+ks.map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(by[k])+'</td></tr>').join('')+'<tr class="tot"><td>Total received</td><td>'+fmt(sum(ks.map(k=>by[k])))+'</td></tr></table>':'<div class="mut">None issued since 1 Oct.</div>')+'<div class="mut">Cover is shown for information only. It is not linked to motor dispatch.</div>';
+ const ks=Object.keys(by).sort(),t=totals(),liya=sum(myMid('cover').map(r=>r.qty));
+ return '<h2 style="margin-top:12px">Cover</h2>'+(ks.length?'<table>'+ks.map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(by[k])+'</td></tr>').join('')+'</table>':'<div class="mut">None issued since 1 Oct.</div>')+(from?'':'<table><tr><th></th><th>Received</th><th>Used</th><th>Balance</th></tr><tr class="tot"><td>Total</td><td>'+fmt(liya)+'</td><td>'+fmt(t.cov)+'</td><td'+(liya-t.cov<0?' class="bad"':'')+'>'+fmt(liya-t.cov)+'</td></tr></table><div class="mut">Used = motors made x 2 (automatic)</div>');
 }
 function extra(){
  const t=totals();let h=coverInfo();
@@ -90,20 +127,21 @@ function extra(){
 }
 function windStock(from,to){
  const m={};
- const g=(c,t)=>m[c+'|'+t]||(m[c+'|'+t]={c,t,recv:0,disp:0,recvR:0,dispR:0});
+ const g=(c,t)=>m[c+'|'+t]||(m[c+'|'+t]={c,t,recv:0,disp:0,sent:0,recvR:0,dispR:0});
  rows.filter(r=>r.kind==='sent'&&r.party===ME).forEach(r=>{const x=g(r.contractor,r.stype);x.recv+=r.qty;if(from&&r.d>=from&&r.d<=to)x.recvR+=r.qty});
- myDisp().filter(r=>r.party&&r.stype).forEach(r=>{const x=g(r.party,r.stype);x.disp+=r.qty;if(from&&r.d>=from&&r.d<=to)x.dispR+=r.qty});
+ myMade().forEach(r=>{const x=g(r.party,r.stype);x.disp+=r.qty;if(from&&r.d>=from&&r.d<=to)x.dispR+=r.qty});
+ myDisp().filter(r=>r.party&&r.stype).forEach(r=>{g(r.party,r.stype).sent+=r.qty});
  return Object.values(m).sort((a,b)=>(a.c+a.t).localeCompare(b.c+b.t));
 }
 function totals(){
- const motors=sum(myDisp().map(r=>r.qty));
+ const motors=sum(myMade().map(r=>r.qty)),sent=sum(myDisp().map(r=>r.qty));
  const b=sum(myMid('bush').map(r=>r.qty)),c=sum(myMid('capacitor').map(r=>r.qty));
- return {motors,b,c,bl:motors*2,cl:motors,kup:sum(myDisp().map(r=>r.kuppa||0))};
+ return {motors,sent,hand:motors-sent,b,c,bl:motors*2,cl:motors,cov:motors*2,kup:sum(myMade().map(r=>r.kuppa||0))};
 }
 function render(){
  $('hd').textContent='App 2 - '+ME;
  const ws=windStock();
- $('wind').innerHTML=ws.length?'<table><tr><th>From</th><th>Type</th><th>Received</th><th>Dispatched</th><th>Available</th></tr>'+ws.map(x=>'<tr><td>'+esc(x.c)+'</td><td>'+esc(x.t)+'</td><td>'+fmt(x.recv)+'</td><td>'+fmt(x.disp)+'</td><td'+(x.recv-x.disp<0?' class="bad"':'')+'>'+fmt(x.recv-x.disp)+'</td></tr>').join('')+'<tr class="tot"><td colspan="2">Total</td><td>'+fmt(sum(ws.map(x=>x.recv)))+'</td><td>'+fmt(sum(ws.map(x=>x.disp)))+'</td><td>'+fmt(sum(ws.map(x=>x.recv-x.disp)))+'</td></tr></table><div class="mut">Available = winding received from the contractor - motors already dispatched from it.</div>':'<div class="mut">No winding received yet.</div>';
+ $('wind').innerHTML=ws.length?'<table><tr><th>From</th><th>Type</th><th>Received</th><th>Motors made</th><th>Available</th></tr>'+ws.map(x=>'<tr><td>'+esc(x.c)+'</td><td>'+esc(x.t)+'</td><td>'+fmt(x.recv)+'</td><td>'+fmt(x.disp)+'</td><td'+(x.recv-x.disp<0?' class="bad"':'')+'>'+fmt(x.recv-x.disp)+'</td></tr>').join('')+'<tr class="tot"><td colspan="2">Total</td><td>'+fmt(sum(ws.map(x=>x.recv)))+'</td><td>'+fmt(sum(ws.map(x=>x.disp)))+'</td><td>'+fmt(sum(ws.map(x=>x.recv-x.disp)))+'</td></tr></table><div class="mut">Available = winding received from the contractor - motors already made from it.</div>':'<div class="mut">No winding received yet.</div>';
  const sel=$('d_src'),keep=sel.value;
  sel.innerHTML='<option value="">Select winding...</option>'+ws.map(x=>'<option value="'+esc(x.c+'|'+x.t)+'">'+esc(x.c+' - '+x.t+' (available '+fmt(x.recv-x.disp)+')')+'</option>').join('');
  sel.value=keep;showAvail();
@@ -111,9 +149,17 @@ function render(){
  $('parts').innerHTML='<table><tr><th></th><th>Received</th><th>Used</th><th>Balance</th></tr>'+
   '<tr><td>Bush 034</td><td>'+fmt(t.b)+'</td><td>'+fmt(t.bl)+'</td><td'+(t.b-t.bl<0?' class="bad"':'')+'>'+fmt(t.b-t.bl)+'</td></tr>'+
   '<tr><td>Capacitor</td><td>'+fmt(t.c)+'</td><td>'+fmt(t.cl)+'</td><td'+(t.c-t.cl<0?' class="bad"':'')+'>'+fmt(t.c-t.cl)+'</td></tr></table>'+
-  '<div class="mut">Received = issued from Midland since 1 Oct. Used = motors dispatched x 2 bush, x 1 capacitor (automatic).</div>'+extra();
- const dl=myDisp().slice().reverse();
- $('dlist').innerHTML=dl.length?'<table><tr><th>Date</th><th>Motors</th><th></th></tr>'+dl.map(r=>'<tr><td>'+dm(r.d)+(r.party?' <span class="mut">'+esc(r.party+' - '+r.stype)+'</span>':'')+(r.kuppa?' <span class="mut">(kuppa '+fmt(r.kuppa)+')</span>':'')+(r.note?' <span class="mut">'+esc(r.note)+'</span>':'')+'</td><td>'+fmt(r.qty)+'</td><td><button class="del" onclick="del('+r.id+')">x</button></td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(t.motors)+'</td><td></td></tr></table>':'<div class="mut">Nothing yet.</div>';
+  '<div class="mut">Received = issued from Midland since 1 Oct. Used = motors made x 2 bush, x 1 capacitor (automatic).</div>'+extra();
+ const ml=myMade().slice().sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id);
+ $('mlist').innerHTML=ml.length?'<table><tr><th>Date</th><th>Motors</th><th></th></tr>'+ml.map(r=>'<tr><td>'+dm(r.d)+' <span class="mut">'+esc(r.party+' - '+r.stype)+'</span>'+(r.kuppa?' <span class="mut">(kuppa '+fmt(r.kuppa)+')</span>':'')+(r.note?' <span class="mut">'+esc(r.note)+'</span>':'')+'</td><td>'+fmt(r.qty)+'</td><td>'+(r.kind==='made'&&canEdit(r)?'<button class="del" onclick="editEntry('+r.id+')">Edit</button>':'')+(IS_ADM?' <button class="del" onclick="del('+r.id+')">x</button>':'')+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(t.motors)+'</td><td></td></tr></table>':'<div class="mut">Nothing yet.</div>';
+ const hw=ws.filter(x=>x.disp>0||x.sent>0);
+ $('mstock').innerHTML=(hw.length?'<table><tr><th>Winding</th><th>Made</th><th>Dispatched</th><th>In hand</th></tr>'+hw.map(x=>'<tr><td>'+esc(x.c+' - '+x.t)+'</td><td>'+fmt(x.disp)+'</td><td>'+fmt(x.sent)+'</td><td'+(x.disp-x.sent<0?' class="bad"':'')+'>'+fmt(x.disp-x.sent)+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(t.motors)+'</td><td>'+fmt(t.sent)+'</td><td'+(t.hand<0?' class="bad"':'')+'>'+fmt(t.hand)+'</td></tr></table>':'<div class="mut">No motors made yet.</div>')+'<div class="mut">In hand = motors made - motors dispatched, for each winding.</div>';
+ const xs=$('x_src'),xk=xs.value;
+ xs.innerHTML='<option value="">Select winding...</option>'+hw.map(x=>'<option value="'+esc(x.c+'|'+x.t)+'">'+esc(x.c+' - '+x.t+' (motors in hand '+fmt(x.disp-x.sent)+')')+'</option>').join('');
+ xs.value=xk;
+ const dl=myDisp().slice().sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id);
+ $('dlist').innerHTML=dl.length?'<table><tr><th>Date</th><th>Motors</th><th></th></tr>'+dl.map(r=>'<tr><td>'+dm(r.d)+(r.party?' <span class="mut">'+esc(r.party+' - '+r.stype)+(r.kind==='dispatch'?' (old entry)':'')+'</span>':'')+(r.note?' <span class="mut">'+esc(r.note)+'</span>':'')+'</td><td>'+fmt(r.qty)+'</td><td>'+(r.kind==='mdispatch'&&canEdit(r)?'<button class="del" onclick="editEntry('+r.id+')">Edit</button>':'')+(IS_ADM?' <button class="del" onclick="del('+r.id+')">x</button>':'')+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(t.sent)+'</td><td></td></tr></table>':'<div class="mut">Nothing yet.</div>';
+ showDisp();
  report();
 }
 function extraRange(from,to){
@@ -122,7 +168,7 @@ function extraRange(from,to){
   const byD={};
   const g=d=>byD[d]||(byD[d]={m:0,k:0,l:0});
   myMid(c).forEach(r=>g(r.date).l+=r.qty);
-  myDisp().forEach(r=>{g(r.d).m+=r.qty;g(r.d).k+=(r.kuppa||0)});
+  myMade().forEach(r=>{g(r.d).m+=r.qty;g(r.d).k+=(r.kuppa||0)});
   let open=0,liya=0,laga=0;
   Object.keys(byD).forEach(d=>{const x=byD[d];if(d<from)open+=x.l-lf(x);else if(d<=to){liya+=x.l;laga+=lf(x)}});
   const by={};myMid(c).filter(r=>r.date>=from&&r.date<=to).forEach(r=>by[r.item]=(by[r.item]||0)+r.qty);
@@ -139,7 +185,7 @@ function report(){
  const byD={};
  const g=d=>byD[d]||(byD[d]={b:0,c:0,m:0});
  mid.filter(r=>r.contractor===ME).forEach(r=>{if(r.category==='bush')g(r.date).b+=r.qty;else if(r.category==='capacitor')g(r.date).c+=r.qty});
- myDisp().forEach(r=>g(r.d).m+=r.qty);
+ myMade().forEach(r=>g(r.d).m+=r.qty);
  let rb=0,rc=0,list=[];
  Object.keys(byD).sort().forEach(d=>{const x=byD[d];rb+=x.b-2*x.m;rc+=x.c-x.m;list.push({d,...x,rb,rc})});
  const vis=list.filter(x=>x.d>=from&&x.d<=to);
@@ -147,16 +193,19 @@ function report(){
  let open={b:0,c:0};
  list.filter(x=>x.d<from).forEach(x=>{open.b+=x.b-2*x.m;open.c+=x.c-x.m});
  const cb=open.b+S.b-2*S.m,cc=open.c+S.c-S.m;
- let h='<div class="box g"><h2>Bush 034</h2><table><tr><td>Received</td><td>'+fmt(S.b)+'</td></tr><tr><td>Used ('+fmt(S.m)+' motors x 2)</td><td>'+fmt(2*S.m)+'</td></tr>'+(open.b?'<tr><td>Opening balance</td><td>'+fmt(open.b)+'</td></tr>':'')+'<tr class="tot"><td>Balance</td><td'+(cb<0?' class="bad"':'')+'>'+fmt(cb)+'</td></tr></table></div>';
- h+='<div class="box y"><h2>Capacitor (total)</h2><table><tr><td>Received</td><td>'+fmt(S.c)+'</td></tr><tr><td>Used ('+fmt(S.m)+' motors x 1)</td><td>'+fmt(S.m)+'</td></tr>'+(open.c?'<tr><td>Opening balance</td><td>'+fmt(open.c)+'</td></tr>':'')+'<tr class="tot"><td>Balance</td><td'+(cc<0?' class="bad"':'')+'>'+fmt(cc)+'</td></tr></table></div>';
- h+='<div class="box"><h2>Date-wise</h2>'+(vis.length?'<table><tr><th>Date</th><th>Bush in</th><th>Cap in</th><th>Motors out</th><th>Bush bal.</th><th>Cap bal.</th></tr>'+vis.map(x=>'<tr><td>'+dm(x.d)+'</td><td>'+(x.b?fmt(x.b):'-')+'</td><td>'+(x.c?fmt(x.c):'-')+'</td><td>'+(x.m?fmt(x.m):'-')+'</td><td'+(x.rb<0?' class="bad"':'')+'>'+fmt(x.rb)+'</td><td'+(x.rc<0?' class="bad"':'')+'>'+fmt(x.rc)+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(S.b)+'</td><td>'+fmt(S.c)+'</td><td>'+fmt(S.m)+'</td><td></td><td></td></tr></table><div class="mut">in = received from Midland. out = motors dispatched. bal. = balance.</div>':'<div class="mut">Nothing in this date range.</div>')+'</div>';
+ let h='<div class="box g"><h2>Bush 034</h2><table><tr><td>Received</td><td>'+fmt(S.b)+'</td></tr><tr><td>Used ('+fmt(S.m)+' motors made x 2)</td><td>'+fmt(2*S.m)+'</td></tr>'+(open.b?'<tr><td>Opening balance</td><td>'+fmt(open.b)+'</td></tr>':'')+'<tr class="tot"><td>Balance</td><td'+(cb<0?' class="bad"':'')+'>'+fmt(cb)+'</td></tr></table></div>';
+ h+='<div class="box y"><h2>Capacitor (total)</h2><table><tr><td>Received</td><td>'+fmt(S.c)+'</td></tr><tr><td>Used ('+fmt(S.m)+' motors made x 1)</td><td>'+fmt(S.m)+'</td></tr>'+(open.c?'<tr><td>Opening balance</td><td>'+fmt(open.c)+'</td></tr>':'')+'<tr class="tot"><td>Balance</td><td'+(cc<0?' class="bad"':'')+'>'+fmt(cc)+'</td></tr></table></div>';
+ h+='<div class="box"><h2>Date-wise</h2>'+(vis.length?'<table><tr><th>Date</th><th>Bush in</th><th>Cap in</th><th>Motors made</th><th>Bush bal.</th><th>Cap bal.</th></tr>'+vis.map(x=>'<tr><td>'+dm(x.d)+'</td><td>'+(x.b?fmt(x.b):'-')+'</td><td>'+(x.c?fmt(x.c):'-')+'</td><td>'+(x.m?fmt(x.m):'-')+'</td><td'+(x.rb<0?' class="bad"':'')+'>'+fmt(x.rb)+'</td><td'+(x.rc<0?' class="bad"':'')+'>'+fmt(x.rc)+'</td></tr>').join('')+'<tr class="tot"><td>Total</td><td>'+fmt(S.b)+'</td><td>'+fmt(S.c)+'</td><td>'+fmt(S.m)+'</td><td></td><td></td></tr></table><div class="mut">in = received from Midland. made = motors made. bal. = balance.</div>':'<div class="mut">Nothing in this date range.</div>')+'</div>';
  const okb=open.b+S.b-2*S.m===cb,okc=true;
- h+='<div class="box p"><h2>Check</h2><div>Bush: '+fmt(open.b+S.b)+' - '+fmt(2*S.m)+' = '+fmt(cb)+' <span class="ok">OK</span></div><div>Capacitor: '+fmt(open.c+S.c)+' - '+fmt(S.m)+' = '+fmt(cc)+' <span class="ok">OK</span></div>'+((cb<0||cc<0)?'<div class="bad">Negative balance: received is too low or dispatch was entered too high. Please check.</div>':'')+'</div>';
+ h+='<div class="box p"><h2>Check</h2><div>Bush: '+fmt(open.b+S.b)+' - '+fmt(2*S.m)+' = '+fmt(cb)+' <span class="ok">OK</span></div><div>Capacitor: '+fmt(open.c+S.c)+' - '+fmt(S.m)+' = '+fmt(cc)+' <span class="ok">OK</span></div>'+((cb<0||cc<0)?'<div class="bad">Negative balance: received is too low or motors made was entered too high. Please check.</div>':'')+'</div>';
 
  const ws2=windStock(from,to);
- h+='<div class="box y"><h2>Winding received by contractor</h2>'+(ws2.length?'<table><tr><th>From</th><th>Type</th><th>Received</th><th>Dispatched</th><th>Available</th></tr>'+ws2.map(x=>'<tr><td>'+esc(x.c)+'</td><td>'+esc(x.t)+'</td><td>'+fmt(x.recvR)+'</td><td>'+fmt(x.dispR)+'</td><td>'+fmt(x.recv-x.disp)+'</td></tr>').join('')+'<tr class="tot"><td colspan="2">Total</td><td>'+fmt(sum(ws2.map(x=>x.recvR)))+'</td><td>'+fmt(sum(ws2.map(x=>x.dispR)))+'</td><td>'+fmt(sum(ws2.map(x=>x.recv-x.disp)))+'</td></tr></table><div class="mut">Received and Dispatched follow the date filter. Available is the current total.</div>':'<div class="mut">No winding received yet.</div>')+'</div>';
- const dd=myDisp().filter(r=>r.d>=from&&r.d<=to);
- h+='<div class="box p"><h2>Motor dispatch by date</h2>'+(dd.length?'<table><tr><th>Date</th><th>Winding</th><th>Motors</th><th>With kuppa</th></tr>'+dd.map(r=>'<tr><td>'+dm(r.d)+'</td><td>'+(r.party?esc(r.party+' - '+r.stype):'-')+'</td><td>'+fmt(r.qty)+'</td><td>'+(r.kuppa?fmt(r.kuppa):'-')+'</td></tr>').join('')+'<tr class="tot"><td colspan="2">Total</td><td>'+fmt(sum(dd.map(r=>r.qty)))+'</td><td>'+fmt(sum(dd.map(r=>r.kuppa||0)))+'</td></tr></table>':'<div class="mut">No dispatch in this range.</div>')+'</div>';
+ h+='<div class="box y"><h2>Winding received by contractor</h2>'+(ws2.length?'<table><tr><th>From</th><th>Type</th><th>Received</th><th>Motors made</th><th>Available</th></tr>'+ws2.map(x=>'<tr><td>'+esc(x.c)+'</td><td>'+esc(x.t)+'</td><td>'+fmt(x.recvR)+'</td><td>'+fmt(x.dispR)+'</td><td>'+fmt(x.recv-x.disp)+'</td></tr>').join('')+'<tr class="tot"><td colspan="2">Total</td><td>'+fmt(sum(ws2.map(x=>x.recvR)))+'</td><td>'+fmt(sum(ws2.map(x=>x.dispR)))+'</td><td>'+fmt(sum(ws2.map(x=>x.recv-x.disp)))+'</td></tr></table><div class="mut">Received and Dispatched follow the date filter. Available is the current total.</div>':'<div class="mut">No winding received yet.</div>')+'</div>';
+ const dd=myMade().filter(r=>r.d>=from&&r.d<=to);
+ h+='<div class="box p"><h2>Motors made by date</h2>'+(dd.length?'<table><tr><th>Date</th><th>Winding</th><th>Motors</th><th>With kuppa</th></tr>'+dd.map(r=>'<tr><td>'+dm(r.d)+'</td><td>'+esc(r.party+' - '+r.stype)+'</td><td>'+fmt(r.qty)+'</td><td>'+(r.kuppa?fmt(r.kuppa):'-')+'</td></tr>').join('')+'<tr class="tot"><td colspan="2">Total</td><td>'+fmt(sum(dd.map(r=>r.qty)))+'</td><td>'+fmt(sum(dd.map(r=>r.kuppa||0)))+'</td></tr></table>':'<div class="mut">No motors made in this range.</div>')+'</div>';
+ const xd=myDisp().filter(r=>r.d>=from&&r.d<=to);
+ h+='<div class="box y"><h2>Motors summary</h2><table><tr><td>Made (all time)</td><td>'+fmt(t.motors)+'</td></tr><tr><td>Dispatched (all time)</td><td>'+fmt(t.sent)+'</td></tr><tr class="tot"><td>In hand</td><td'+(t.hand<0?' class="bad"':'')+'>'+fmt(t.hand)+'</td></tr></table></div>';
+ h+='<div class="box p"><h2>Motor dispatch by date</h2>'+(xd.length?'<table><tr><th>Date</th><th>Winding</th><th>Motors</th></tr>'+xd.map(r=>'<tr><td>'+dm(r.d)+'</td><td>'+(r.party?esc(r.party+' - '+r.stype):'-')+'</td><td>'+fmt(r.qty)+'</td></tr>').join('')+'<tr class="tot"><td colspan="2">Total</td><td>'+fmt(sum(xd.map(r=>r.qty)))+'</td></tr></table>':'<div class="mut">No dispatch in this range.</div>')+'</div>';
  h+='<div class="box g">'+coverInfo(from,to).replace('margin-top:12px','margin-top:0')+extraRange(from,to)+'</div>';
  $('rep').innerHTML=h;
 }
@@ -167,11 +216,12 @@ function problem(src,qty,kq,d){
  const x=windStock().find(y=>y.c+'|'+y.t===src),av=x?x.recv-x.disp:0;
  if(qty>av)return 'Not enough winding: only '+fmt(av)+' available, you entered '+fmt(qty)+'.';
  const sp=src.split('|'),t=totals();
- if(d&&myDisp().some(r=>r.d===d&&r.party===sp[0]&&r.stype===sp.slice(1).join('|')&&r.qty===qty&&(r.kuppa||0)===kq))return 'Duplicate: this dispatch is already saved.';
- const M=t.motors+qty,K=t.kup+kq,kl=sum(myMid('kuppa').map(r=>r.qty));
+ if(d&&myMade().some(r=>r.d===d&&r.party===sp[0]&&r.stype===sp.slice(1).join('|')&&r.qty===qty&&(r.kuppa||0)===kq))return 'Duplicate: this motors entry is already saved.';
+ const M=t.motors+qty,K=t.kup+kq,kl=sum(myMid('kuppa').map(r=>r.qty)),cvl=sum(myMid('cover').map(r=>r.qty));
  const sh=[];
  if(t.b-2*M<0)sh.push('bush (has '+fmt(t.b)+', needs '+fmt(2*M)+')');
  if(t.c-M<0)sh.push('capacitor (has '+fmt(t.c)+', needs '+fmt(M)+')');
+ if(cvl-2*M<0)sh.push('cover (has '+fmt(cvl)+', needs '+fmt(2*M)+')');
  if(kl-K<0)sh.push('kuppa (has '+fmt(kl)+', needs '+fmt(K)+')');
  if(sh.length)return 'Not enough parts: '+sh.join('; ')+'. Record the parts issue in Midland first.';
  return null;
@@ -182,7 +232,7 @@ function showAvail(){
  const x=windStock().find(y=>y.c+'|'+y.t===v);
  const q=Number($('d_qty').value||0);
  const pr=problem(v,q,Number($('d_kup').value||0),$('d_d').value);$('d_save').disabled=!!pr;
- e.innerHTML=(pr?'<div class="bad">'+esc(pr)+' Cannot save.</div>':'')+'Available before dispatch: <b>'+fmt(x?x.recv-x.disp:0)+'</b>'+(q>0?' &nbsp; After this dispatch: <b'+((x?x.recv-x.disp:0)-q<0?' class="bad"':'')+'>'+fmt((x?x.recv-x.disp:0)-q)+'</b>':'');
+ e.innerHTML=(pr?'<div class="bad">'+esc(pr)+' Cannot save.</div>':'')+'Winding available: <b>'+fmt(x?x.recv-x.disp:0)+'</b>'+(q>0?' &nbsp; After these motors: <b'+((x?x.recv-x.disp:0)-q<0?' class="bad"':'')+'>'+fmt((x?x.recv-x.disp:0)-q)+'</b>':'');
 }
 $('d_src').onchange=showAvail;$('d_qty').oninput=showAvail;$('d_kup').oninput=showAvail;$('d_d').onchange=showAvail;
 async function del(id){if(!confirm('Delete this entry?'))return;try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id})});await load()}catch(e){msg(e.message)}}
@@ -190,14 +240,40 @@ $('d_save').onclick=async()=>{
  const kuppa=Number($('d_kup').value||0),qty=Number($('d_qty').value),d=$('d_d').value,note=$('d_note').value,er=$('d_err');er.textContent='';
  const src=$('d_src').value;
  if(!src){er.textContent='Select the winding (contractor - type) first';return}
- if(!(qty>0)){er.textContent='Enter the number of motors dispatched';return}
+ if(!(qty>0)){er.textContent='Enter the number of motors made';return}
  const pb=problem(src,qty,kuppa,d);if(pb){er.textContent=pb;return}
  const sp=src.split('|');
  if(!d||d<START){er.textContent='Date must be 1 Oct 2026 or later';return}
- if(kuppa<0||kuppa>qty){er.textContent='Motors with kuppa cannot be more than motors dispatched';return}
+ if(kuppa<0||kuppa>qty){er.textContent='Motors with kuppa cannot be more than motors made';return}
  $('d_save').disabled=true;
- try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:'dispatch',contractor:ME,party:sp[0],stype:sp.slice(1).join('|'),qty,kuppa,d,note})});$('d_qty').value='';$('d_kup').value='';$('d_src').value='';$('d_note').value='';msg('Saved');await load()}catch(e){er.textContent=e.message}
+ try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:'made',contractor:ME,party:sp[0],stype:sp.slice(1).join('|'),qty,kuppa,d,note})});$('d_qty').value='';$('d_kup').value='';$('d_src').value='';$('d_note').value='';msg('Saved');await load()}catch(e){er.textContent=e.message}
  showAvail();
+};
+function dProblem(src,qty,d){
+ if(!src||!(qty>0))return null;
+ const x=windStock().find(y=>y.c+'|'+y.t===src),h=x?x.disp-x.sent:0,sp=src.split('|');
+ if(qty>h)return 'Not enough motors in hand for this winding: only '+fmt(h)+', you entered '+fmt(qty)+'.';
+ if(d&&myDisp().some(r=>r.d===d&&r.party===sp[0]&&r.stype===sp.slice(1).join('|')&&r.qty===qty&&r.kind==='mdispatch'))return 'Duplicate: this dispatch is already saved.';
+ return null;
+}
+function showDisp(){
+ const v=$('x_src').value,e=$('x_avail');
+ if(!v){e.textContent='';$('x_save').disabled=false;return}
+ const x=windStock().find(y=>y.c+'|'+y.t===v),h=x?x.disp-x.sent:0,q=Number($('x_qty').value||0),pr=dProblem(v,q,$('x_d').value);$('x_save').disabled=!!pr;
+ e.innerHTML=(pr?'<div class="bad">'+esc(pr)+' Cannot save.</div>':'')+'Motors in hand for this winding: <b>'+fmt(h)+'</b>'+(q>0?' &nbsp; After this dispatch: <b'+(h-q<0?' class="bad"':'')+'>'+fmt(h-q)+'</b>':'');
+}
+$('x_src').onchange=showDisp;
+$('x_qty').oninput=showDisp;$('x_d').onchange=showDisp;$('x_d').value=today();
+$('x_save').onclick=async()=>{
+ const qty=Number($('x_qty').value),d=$('x_d').value,note=$('x_note').value,er=$('x_err'),src=$('x_src').value;er.textContent='';
+ if(!src){er.textContent='Select the winding (contractor - type) first';return}
+ if(!(qty>0)){er.textContent='Enter the number of motors dispatched';return}
+ const pb=dProblem(src,qty,d);if(pb){er.textContent=pb;return}
+ const sp=src.split('|');
+ if(!d||d<START){er.textContent='Date must be 1 Oct 2026 or later';return}
+ $('x_save').disabled=true;
+ try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:'mdispatch',contractor:ME,party:sp[0],stype:sp.slice(1).join('|'),qty,d,note})});$('x_src').value='';$('x_qty').value='';$('x_note').value='';msg('Saved');await load()}catch(e){er.textContent=e.message}
+ showDisp();
 };
 async function load(){
  try{const [a,b]=await Promise.all([api('/api/wa'),api('/api/midland').catch(e=>({rows:[],err:e.message}))]);
