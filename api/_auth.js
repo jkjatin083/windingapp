@@ -30,6 +30,10 @@ export function verify(req) {
   } catch (e) { return null; }
 }
 
+export function isAdm(req) {
+  return verify(req) === 'ADMIN';
+}
+
 export function hashPin(pin, salt) {
   return crypto.scryptSync(String(pin), salt, 32).toString('hex');
 }
