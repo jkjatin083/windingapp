@@ -6,8 +6,11 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
   try {
     const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-    const name = String(b.name || ''), pin = String(b.pin || '');
-    if (name !== 'ADMIN' && !NAMES.includes(name)) return res.status(401).json({ error: 'Wrong name or PIN' });
+    const name = String(b.name || '').trim(), pin = String(b.pin || '').trim();
+    if (!name || !pin || (name !== 'ADMIN' && !NAMES.includes(name))) {
+      return res.status(401).json({ error: 'Wrong name or PIN' });
+    }
+    if (!process.env.DATABASE_URL) return res.status(500).json({ error: 'Login database is not configured' });
     const sql = neon(process.env.DATABASE_URL);
     const rows = await sql`SELECT * FROM wa_users WHERE name = ${name}`;
     const row = rows[0];
