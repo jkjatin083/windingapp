@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { neon } from '@neondatabase/serverless';
-import { NAMES, verify, sign, hashPin } from './auth.js';
+import { NAMES, verify, sign, hashPin } from './_auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     if (b.action === 'open') {
-      return res.status(200).json({ token: sign(b.name, 12), name: b.name });
+      return res.status(200).json({ token: sign(b.name, 12, true), name: b.name });
     }
     return res.status(400).json({ error: 'Invalid action' });
   } catch (e) {
