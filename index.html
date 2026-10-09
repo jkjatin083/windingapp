@@ -1,27 +1,57 @@
 <!doctype html>
-<html lang="hi"><head><meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stator apps</title>
+<title>Stator apps - Log in</title>
 <style>
-body{margin:0;background:#fffdf6;font-family:"Patrick Hand","Comic Sans MS","Segoe Print",cursive;color:#222;font-size:20px}
+*{box-sizing:border-box}
+body{margin:0;background:#fffdf6;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#222;font-size:16px}
 .w{max-width:440px;margin:0 auto;padding:18px}
-h1{font-size:28px;margin:6px 0 14px}
-.b{display:block;width:100%;box-sizing:border-box;text-align:center;text-decoration:none;color:#222;font:inherit;font-size:22px;padding:14px;margin:12px 0;border:2.5px solid #333;border-radius:255px 15px 225px 15px/15px 225px 15px 255px;background:#e6f2ff;cursor:pointer}
-.b.g{background:#e8f7e4}.b.y{background:#fff3cc}.b.p{background:#fde7ef}
-small{color:#666}
+h1{font-size:26px;margin:6px 0 14px}
+label{display:block;margin-top:10px;color:#444}
+select,input{font:inherit;width:100%;padding:12px;margin:4px 0 8px;border:1px solid #b5b09f;border-radius:8px;background:#fff}
+.b{display:block;width:100%;text-align:center;text-decoration:none;color:#222;font:inherit;font-size:18px;padding:14px;margin:12px 0;border:1.5px solid #cfc9b8;border-radius:10px;background:#e6f2ff;cursor:pointer}
+.b.g{background:#e8f7e4}.b.y{background:#fff3cc}
+.err{color:#c0392b;margin-top:6px}
+small,.mut{color:#666}
 </style></head><body><div class="w">
-<h1>Tum kaun ho?</h1>
-<small>Naam chuno, ek baar. Baad mein upar "naam badlo" se badal sakte ho.</small>
-<div id="c"></div>
+<h1 id="h">Log in</h1>
+<div id="login">
+ <label>Your name</label>
+ <select id="name">
+  <option value="">Select...</option>
+  <option>Suman</option><option>Dinesh</option><option>Ajeet</option><option>Siraj</option><option>Sunil</option><option>Pandey ji</option>
+  <option value="ADMIN">Admin (Jatin)</option>
+ </select>
+ <label>PIN</label>
+ <input id="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="4 to 6 digits">
+ <button class="b y" id="go">Log in</button>
+ <div class="err" id="err"></div>
+ <div class="mut">You can only see your own data. Ask Jatin if you forgot your PIN.</div>
+</div>
+<div id="apps" style="display:none"></div>
 <script>
-const APP1=['Suman','Dinesh','Ajeet','Siraj','Sunil'], APP2=['Pandey ji','Sunil'];
-const colors={Siraj:'g',Suman:'',Dinesh:'g',Ajeet:'y',Sunil:'p','Pandey ji':''};
-const c=document.getElementById('c');
-function btn(txt,href,cls,name){const a=document.createElement('a');a.className='b '+cls;a.textContent=txt;a.href=href;
- a.onclick=()=>localStorage.setItem('wa_name',name);c.appendChild(a);}
-const h=(t)=>{const e=document.createElement('h1');e.style.fontSize='22px';e.textContent=t;c.appendChild(e)};
-h('App 1 - Winding (contractor)');
-APP1.forEach(n=>btn(n,'app1.html',colors[n],n));
-h('App 2 - Motor + Dispatch');
-APP2.forEach(n=>btn(n,'app2.html',colors[n],n));
+const APP1=['Suman','Dinesh','Ajeet','Siraj','Sunil'],APP2=['Pandey ji','Sunil'];
+const $=id=>document.getElementById(id);
+function showApps(name){
+ $("h").style.display="none";$("login").style.display="none";const a=$('apps');a.style.display='block';
+ let h='<h1>Hello, '+name+'</h1>';
+ if(APP1.includes(name))h+='<a class="b g" href="app1.html">App 1 - Winding</a>';
+ if(APP2.includes(name))h+='<a class="b" href="app2.html">App 2 - Motors and dispatch</a>';
+ h+='<a class="b" href="#" id="out">Log out</a>';a.innerHTML=h;
+ $('out').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');location.reload()};
+}
+const ex=localStorage.getItem('wa_token'),en=localStorage.getItem('wa_name');
+if(ex&&en&&en!=='ADMIN')showApps(en);
+$('go').onclick=async()=>{
+ const name=$('name').value,pin=$('pin').value;$('err').textContent='';
+ if(!name||!pin){$('err').textContent='Select your name and enter the PIN';return}
+ $('go').disabled=true;
+ try{
+  const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,pin})});
+  const j=await r.json();if(!r.ok)throw new Error(j.error||'Login failed');
+  if(name==='ADMIN'){localStorage.setItem('wa_admin',j.token);location.href='admin.html';return}
+  localStorage.setItem('wa_token',j.token);localStorage.setItem('wa_name',j.name);showApps(j.name);
+ }catch(e){$('err').textContent=e.message}
+ $('go').disabled=false;
+};
 </script></div></body></html>
