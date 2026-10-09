@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fffdf6;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#222;font-size:16px}
+.w{max-width:460px;margin:0 auto;padding:14px}
+h1{font-size:24px;margin:4px 0 10px}
+.box{border:1.5px solid #cfc9b8;border-radius:10px;padding:12px 14px;margin:12px 0;background:#e6f2ff}
+.row{display:flex;gap:8px;align-items:center;margin-top:8px}
+input{font:inherit;width:100%;padding:10px;border:1px solid #b5b09f;border-radius:8px;background:#fff}
+button,a.btn{font:inherit;padding:9px 12px;border:1.5px solid #cfc9b8;border-radius:10px;background:#fff3cc;cursor:pointer;text-decoration:none;color:#222;white-space:nowrap}
+.mut{color:#666;font-size:14px}.ok{color:#1e8449}.bad{color:#c0392b}
+#msg{display:none;background:#fff3cc;border:1px solid #cfc9b8;padding:6px;text-align:center;margin-bottom:8px}
+</style></head><body><div class="w">
+<div id="msg"></div>
+<h1>Admin</h1>
+<div class="mut">Set a 4 to 6 digit PIN for each person. They log in with name + PIN and see only their own data. "Open" lets you view or enter as that person.</div>
+<div id="list"></div>
+<div class="row"><a class="btn" href="#" id="out">Log out</a></div>
+<script>
+const $=id=>document.getElementById(id);
+const tok=localStorage.getItem('wa_admin');
+if(!tok)location.href='index.html';
+const APP1=['Suman','Dinesh','Ajeet','Siraj','Sunil'],APP2=['Pandey ji','Sunil'];
+function msg(t){const m=$('msg');m.textContent=t;m.style.display='block';setTimeout(()=>m.style.display='none',3000)}
+async function api(opt){const o=opt||{};o.headers=Object.assign({'Content-Type':'application/json',Authorization:'Bearer '+tok},o.headers||{});
+ const r=await fetch('/api/admin',o);const j=await r.json();
+ if(r.status===401){localStorage.removeItem('wa_admin');location.href='index.html';throw new Error('login')}
+ if(!r.ok)throw new Error(j.error||'error');return j}
+async function load(){
+ const j=await api();
+ $('list').innerHTML=j.users.map(u=>'<div class="box"><b>'+u.name+'</b> <span class="'+(u.hasPin?'ok':'bad')+'">'+(u.hasPin?'PIN set':'No PIN yet')+'</span>'+
+  '<div class="row"><input id="p_'+u.name.replace(' ','_')+'" type="password" inputmode="numeric" maxlength="6" placeholder="New PIN"><button data-set="'+u.name+'">Set PIN</button></div>'+
+  '<div class="row">'+(APP1.includes(u.name)?'<button data-open="'+u.name+'" data-app="app1.html">Open App 1</button>':'')+(APP2.includes(u.name)?'<button data-open="'+u.name+'" data-app="app2.html">Open App 2</button>':'')+'</div></div>').join('');
+ document.querySelectorAll('[data-set]').forEach(b=>b.onclick=async()=>{
+  const n=b.dataset.set,pin=$('p_'+n.replace(' ','_')).value;
+  try{await api({method:'POST',body:JSON.stringify({action:'setpin',name:n,pin})});msg('PIN saved for '+n);load()}catch(e){msg(e.message)}});
+ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
+  try{const r=await api({method:'POST',body:JSON.stringify({action:'open',name:b.dataset.open})});
+   localStorage.setItem('wa_token',r.token);localStorage.setItem('wa_name',r.name);location.href=b.dataset.app}catch(e){msg(e.message)}});
+}
+$('out').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_admin');localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');location.href='index.html'};
+load().catch(e=>msg(e.message));
+</script></div></body></html>
