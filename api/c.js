@@ -142,6 +142,11 @@ export default async function handler(req, res) {
         if (!issue) return res.status(400).json({ error: 'Choose the order' });
         if (kind === 'wound' && qty > issue.left) return res.status(409).json({ error: 'Only ' + issue.left + ' left in order ' + issue.order_no });
       }
+      if (kind === 'wound') {
+        // stators made cannot use more stamping than the contractor holds of this type
+        const st = (await stampStock(sql, me).catch(() => ({})))[stype] || { bal: 0 };
+        if (qty > st.bal) return res.status(409).json({ error: 'You have only ' + st.bal + ' of ' + stype + ' stamping left. Cannot make ' + qty });
+      }
       if (kind === 'sent') {
         const h = (await holds(sql, me))[stype] || { held: 0 };
         if (qty > h.held) return res.status(409).json({ error: 'You hold only ' + h.held + ' of ' + stype + '. Cannot give ' + qty });
