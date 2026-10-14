@@ -19,7 +19,7 @@ small,.mut{color:#666}
  <label>Your name</label>
  <select id="name">
   <option value="">Select...</option>
-  <option>Suman</option><option>Dinesh</option><option>Ajeet</option><option>Siraj</option><option>Sunil</option><option>Pandey ji</option>
+  <option>Suman</option><option>Dinesh</option><option>Ajeet</option><option>Siraj</option><option>Sunil</option><option>Pandey ji</option><option>Sandeep</option>
   <option value="ADMIN">Admin (Jatin)</option>
  </select>
  <label>PIN</label>
@@ -30,13 +30,14 @@ small,.mut{color:#666}
 </div>
 <div id="apps" style="display:none"></div>
 <script>
-const APP1=['Suman','Dinesh','Ajeet','Siraj','Sunil'],APP2=['Pandey ji','Sunil'];
+const APP1=['Suman','Dinesh','Ajeet','Siraj','Sunil'],APP2=['Pandey ji','Sunil'],SALE=['Sandeep'];
 const $=id=>document.getElementById(id);
 function showApps(name){
  $("h").style.display="none";$("login").style.display="none";const a=$('apps');a.style.display='block';
  let h='<h1>Hello, '+name+'</h1>';
  if(APP1.includes(name))h+='<a class="b g" href="app1.html">App 1 - Winding</a>';
  if(APP2.includes(name))h+='<a class="b" href="app2.html">App 2 - Motors and dispatch</a>';
+ if(SALE.includes(name))h+='<a class="b g" href="sale.html">Sale Orders</a>';
  h+='<a class="b" href="#" id="out">Log out</a>';a.innerHTML=h;
  $('out').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');location.reload()};
 }
