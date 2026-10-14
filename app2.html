@@ -1,69 +1,90 @@
-
 <!doctype html>
-<html lang="hi"><head><meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>App 2 - Motor + Dispatch</title>
+<title>Motor app</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#fffdf6;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#222;font-size:16px}
-.w{max-width:460px;margin:0 auto;padding:14px}
-h1{font-size:26px;margin:4px 0}h2{font-size:21px;margin:0 0 8px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.top a{color:#555;font-size:16px}
-.box{border:1.5px solid #cfc9b8;border-radius:10px;padding:12px 14px;margin:12px 0;background:#e6f2ff}
-.box.g{background:#e8f7e4}.box.y{background:#fff3cc}.box.p{background:#fde7ef}
-table{width:100%;border-collapse:collapse;font-size:17px}
-th,td{padding:5px 3px;border-bottom:1.5px dashed #888;text-align:right}
-th:first-child,td:first-child{text-align:left}
-th{font-weight:normal;color:#444}
-tr.tot td{border-top:2.5px solid #333;border-bottom:none;font-weight:bold}
-input,select{font:inherit;font-size:19px;width:100%;padding:8px;margin:4px 0 8px;border:1px solid #b5b09f;border-radius:8px;background:#fff}
-button{font:inherit;font-size:20px;padding:10px 16px;border:1.5px solid #cfc9b8;border-radius:10px;background:#fff3cc;cursor:pointer}
-button.w100{width:100%}
-.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.tabs button{flex:1 1 40%;background:#fff}.tabs button.on{background:#ffe08a}
-.big{font-size:30px;font-weight:bold}.bad{color:#c0392b;font-weight:bold}.ok{color:#1e8449}
-.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
-.del{padding:0 8px;font-size:16px;background:#fff;border-width:1.5px}
-.err{color:#c0392b}
-small,.mut{color:#666;font-size:16px}
-#msg{position:sticky;top:0;background:#fff3cc;padding:6px;text-align:center;display:none;border:1px solid #b5b09f}
+*{box-sizing:border-box;margin:0}
+:root{--bg:#f5f6f8;--ink:#101828;--mute:#667085;--line:#eaecf0;--a:#0e9f83;--a2:#e7f6f2;--amb:#b54708;--amb2:#fffaeb;--red:#b3261e}
+body{background:var(--bg);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:16px}
+.w{max-width:460px;margin:0 auto;padding:14px 18px 110px}
+.top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 16px}
+.who{display:flex;align-items:center;gap:10px}.av{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:600}
+.who small{display:block;color:var(--mute);font-size:12px}.who b{font-size:15px}
+.chipd{background:#fff;border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:12.5px;color:var(--mute);font-weight:500;text-align:center}
+a.lo{color:var(--mute);font-size:12px;text-decoration:none;display:block;text-align:right;margin-top:3px}
+h1{font-size:30px;letter-spacing:-.02em;font-weight:700;margin-bottom:16px}
+.box,.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 0 0 1px var(--line)}
+h2{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:0 0 10px}
+label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:14px 0 6px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+th{font-size:10.5px;color:var(--mute);font-weight:600;text-align:right;padding:0 0 8px 4px;text-transform:uppercase;letter-spacing:.04em}
+td{text-align:right;padding:10px 0 10px 4px;border-top:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;padding-left:0}td:first-child{font-weight:600}
+tr.tot td{font-weight:700;border-top:1.5px solid var(--ink)}
+input,select{font:inherit;font-size:16px;width:100%;padding:13px 14px;margin:0;border:1.5px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);outline:none}
+input:focus{border-color:var(--a)}
+button{font:inherit;font-size:14px;font-weight:600;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);cursor:pointer}
+button.w100{width:100%;border:0;border-radius:16px;background:var(--a);color:#fff;font-size:17px;padding:17px;margin-top:16px;position:sticky;bottom:80px}
+button.w100.dk{background:var(--ink)}button:disabled{opacity:.5}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.del{padding:4px 10px;font-size:12px}
+.bad{color:var(--red);font-weight:700}.ok{color:var(--a);font-weight:700}
+.err{color:var(--red);font-size:14px;margin-top:8px}
+.mut,small{color:var(--mute);font-size:13px;margin:6px 0}
+.mut b{color:var(--ink)}
+.tile{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);margin-bottom:8px;background:#fff;cursor:pointer}
+.tile .r{width:20px;height:20px;border-radius:50%;border:2px solid #d0d5dd;flex:none}
+.tile .t{flex:1}.tile .t b{font-size:15px;display:block}.tile .t small{color:var(--mute);font-size:12px;margin:0}
+.tile .n{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.tile.on{border-color:var(--a);background:var(--a2)}.tile.on .r{border-color:var(--a);background:radial-gradient(var(--a) 42%,transparent 46%)}
+.qty{text-align:center}.qty .big{width:100%;border:0;text-align:center;font-size:56px;font-weight:700;letter-spacing:-.03em;padding:2px 0;background:transparent}
+.qty .big::placeholder{color:#d0d5dd}.qty label{text-align:left;margin-top:0}
+.qs{display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+.hide{display:none}
+#msg{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:30px;display:none;z-index:99;font-size:14px;max-width:90%}
+nav{position:fixed;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding-top:9px;z-index:5}
+nav a{text-align:center;font-size:11.5px;color:#98a2b3;font-weight:500;text-decoration:none;width:33%}nav a.on{color:var(--a);font-weight:700}nav svg{display:block;margin:0 auto 4px}
 </style></head><body><div class="w">
 <div id="msg"></div>
-<div class="top"><h1 id="hd">App 2</h1><a href="#" id="lo">Log out</a></div>
-<div class="tabs"><button id="t1" class="on">Motors</button><button id="t2">Report</button></div>
+<div class="top"><div class="who"><div class="av" id="av"></div><div><small>Motor app</small><b id="who"></b></div></div><div><div class="chipd" id="dt"></div><a class="lo" href="#" id="lo">Log out</a></div></div>
+<h1 id="ttl">Motors made</h1>
+<span id="hd" class="hide"></span><span class="hide"><button id="t1"></button><button id="t2"></button></span>
 <div id="err" class="err"></div>
 <div id="p1">
- <div class="box g"><h2>Winding received (from App 1)</h2><div id="wind"></div></div>
- <div class="box"><h2>Parts: Bush and Capacitor</h2><div id="parts"></div></div>
- <div class="box y"><h2>Make motors</h2>
-  <div class="mut">Winding + bush + capacitor + cover (+ kuppa) = motor.</div>
-  <label>Winding to use (contractor - type)</label><select id="d_src"></select>
-  <div class="mut" id="d_avail"></div>
-  <label>For which order</label><select id="d_ord"></select>
-  <div class="row"><div><label>Motors made</label><input id="d_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="d_d" type="date" min="2026-10-01"></div></div>
-  <label>Motors that have a kuppa (not every motor has one)</label><input id="d_kup" type="number" inputmode="numeric" min="0" placeholder="0">
+<div id="pn_make">
+ <div class="box"><h2>Winding received (from App 1)</h2><div id="wind"></div></div>
+ <div class="box"><h2>Winding to use</h2><div id="tl_d_src"></div><select id="d_src" class="hide"></select><div class="mut" id="d_avail"></div></div>
+ <div class="box"><h2>For which order</h2><div id="tl_d_ord"></div><select id="d_ord" class="hide"></select></div>
+ <div class="box qty"><label>Motors made</label><input class="big" id="d_qty" type="number" inputmode="numeric" min="1" placeholder="0"><div class="qs"><button data-t="d_qty" data-a="50">+50</button><button data-t="d_qty" data-a="100">+100</button><button data-t="d_qty" data-a="500">+500</button></div>
+  <div class="mut" style="margin-top:12px">Winding + bush + capacitor + cover (+ kuppa) = motor.</div></div>
+ <div class="box"><div class="row"><div><label style="margin-top:0">Date</label><input id="d_d" type="date" min="2026-10-01"></div><div><label style="margin-top:0">Kuppa (optional)</label><input id="d_kup" type="number" inputmode="numeric" min="0" placeholder="0"></div></div>
   <label>Note (optional)</label><input id="d_note" maxlength="100">
-  <button class="w100" id="d_save">Save motors made</button><div class="err" id="d_err"></div>
- </div>
+  <button class="w100" id="d_save">Save motors made</button><div class="err" id="d_err"></div></div>
  <div class="box"><h2>Motors made entries</h2><div id="mlist"></div></div>
- <div class="box g"><h2>Motors in hand</h2><div id="mstock"></div></div>
- <div class="box y"><h2>Dispatch motors</h2>
-  <label>Motors made from which winding (contractor - type)</label><select id="x_src"></select>
-  <div id="x_avail" class="mut"></div>
-  <label>For which order</label><select id="x_ord"></select>
-  <div class="row"><div><label>Motors dispatched</label><input id="x_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="x_d" type="date" min="2026-10-01"></div></div>
-  <label>Note (optional)</label><input id="x_note" maxlength="100">
-  <button class="w100" id="x_save">Save dispatch</button><div class="err" id="x_err"></div>
- </div>
- <div class="box p"><h2>Dispatch entries</h2><div id="dlist"></div></div>
 </div>
-<div id="p2" style="display:none">
+<div id="pn_disp">
+ <div class="box"><h2>Motors in hand</h2><div id="mstock"></div></div>
+ <div class="box"><h2>Motors in hand, by winding</h2><div id="tl_x_src"></div><select id="x_src" class="hide"></select><div id="x_avail" class="mut"></div></div>
+ <div class="box"><h2>For which order</h2><div id="tl_x_ord"></div><select id="x_ord" class="hide"></select></div>
+ <div class="box qty"><label>Motors dispatched</label><input class="big" id="x_qty" type="number" inputmode="numeric" min="1" placeholder="0"><div class="qs"><button data-t="x_qty" data-a="50">+50</button><button data-t="x_qty" data-a="100">+100</button><button data-t="x_qty" data-all="x_src">All</button></div></div>
+ <div class="box"><div class="row"><div><label style="margin-top:0">Date</label><input id="x_d" type="date" min="2026-10-01"></div></div>
+  <label>Note (optional)</label><input id="x_note" maxlength="100">
+  <button class="w100 dk" id="x_save">Save dispatch</button><div class="err" id="x_err"></div></div>
+ <div class="box"><h2>Dispatch entries</h2><div id="dlist"></div></div>
+</div>
+</div>
+<div id="p2">
+<div id="pn_rep">
+ <div class="box"><h2>Parts: Bush and Capacitor</h2><div id="parts"></div></div>
  <div class="box"><h2>Parts report</h2>
   <div class="mut">Rule: 1 motor = 2 bush + 1 capacitor + 2 cover. Kuppa only in the motors entered. Parts are used when motors are made.</div>
   <div class="row"><div><label>From</label><input id="r_from" type="date" min="2026-10-01"></div><div><label>To</label><input id="r_to" type="date" min="2026-10-01"></div></div>
  </div>
  <div id="rep"></div>
 </div>
+</div>
+</div>
+<nav><a href="#" id="nv_make"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="9"/><path d="M11 6v10M6 11h10"/></svg>Make</a><a href="#" id="nv_disp"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11h14M13 6l5 5-5 5"/></svg>Dispatch</a><a href="#" id="nv_rep"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18V9M11 18V4M18 18v-6"/></svg>Report</a></nav>
 <script>
 const START='2026-10-01';
 const ME=localStorage.getItem('wa_name');
@@ -306,4 +327,36 @@ async function load(){
  catch(e){$('err').textContent='Could not load: '+e.message}
 }
 render();load();
+
+// ---- new look helpers (no change to data logic) ----
+function tilify(selId,boxId,hint){
+ const sel=$(selId),box=$(boxId);if(!sel||!box)return;
+ const paint=()=>{
+  const opts=Array.from(sel.options).filter(o=>o.value!=='');
+  if(!opts.length){const ph=sel.options[0]?sel.options[0].textContent:'';box.innerHTML='<div class="mut">'+esc(ph||hint)+'</div>';return}
+  box.innerHTML=opts.map(o=>{
+   const m=/^(.*?)\s*\(([^()]*)\)\s*$/.exec(o.textContent),title=m?m[1]:o.textContent,par=m?m[2]:'';
+   const nm=/(-?[\d,]+)/.exec(par),num=nm?nm[1]:'',sub=nm?par.replace(nm[1],'').trim():par;
+   return '<div class="tile'+(o.value===sel.value?' on':'')+'" data-v="'+esc(o.value)+'"><span class="r"></span><div class="t"><b>'+esc(title)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</div><span class="n">'+esc(num)+'</span></div>'}).join('');
+  box.querySelectorAll('.tile').forEach(t=>t.onclick=()=>{sel.value=t.dataset.v;sel.dispatchEvent(new Event('change'));paint()});
+ };
+ new MutationObserver(paint).observe(sel,{childList:true});
+ sel.addEventListener('change',paint);
+ sel._paint=paint;paint();
+}
+['d_src','d_ord','x_src','x_ord'].forEach(id=>tilify(id,'tl_'+id,'Nothing to choose yet'));
+const _render=render;render=function(){_render();['d_src','d_ord','x_src','x_ord'].forEach(i=>$(i)._paint&&$(i)._paint())};
+document.querySelectorAll('.qs button').forEach(b=>b.onclick=()=>{
+ const inp=$(b.dataset.t);let v;
+ if(b.dataset.all){const s=$(b.dataset.all).value,x=s?windStock().find(y=>y.c+'|'+y.t===s):null;v=x?Math.max(0,x.disp-x.sent):0}
+ else v=(Number(inp.value)||0)+Number(b.dataset.a);
+ inp.value=v;inp.dispatchEvent(new Event('input'))});
+function go(k){
+ ['make','disp','rep'].forEach(n=>{$('pn_'+n).style.display=n===k?'':'none';$('nv_'+n).className=n===k?'on':''});
+ $('ttl').textContent={make:'Motors made',disp:'Dispatch',rep:'Report'}[k];window.scrollTo(0,0);
+}
+['make','disp','rep'].forEach(n=>$('nv_'+n).onclick=e=>{e.preventDefault();go(n)});
+$('av').textContent=(ME||'?')[0];$('who').textContent=ME;
+$('dt').textContent=(()=>{const t=today(),m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return +t.slice(8,10)+' '+m[+t.slice(5,7)-1]})();
+go('make');
 </script></div></body></html>
