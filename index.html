@@ -50,7 +50,7 @@ $('go').onclick=async()=>{
  try{
   const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,pin})});
   const j=await r.json();if(!r.ok)throw new Error(j.error||'Login failed');
-  if(name==='ADMIN'){localStorage.setItem('wa_admin',j.token);location.href='admin.html';return}
+  if(name==='ADMIN'){localStorage.setItem('wa_admin',j.token);location.href='orderbook.html#overview';return}
   localStorage.setItem('wa_token',j.token);localStorage.setItem('wa_name',j.name);showApps(j.name);
  }catch(e){$('err').textContent=e.message}
  $('go').disabled=false;
