@@ -16,6 +16,7 @@ button,a.btn{font:inherit;padding:9px 12px;border:1.5px solid #cfc9b8;border-rad
 </style></head><body><div class="w">
 <div id="msg"></div>
 <h1>Admin</h1>
+<div class="row"><a class="btn" href="orderbook.html" style="flex:1;text-align:center;font-size:19px;padding:14px">Order Book (issue, stamping demand, rotor)</a></div>
 <div class="mut">Set a 4 to 6 digit PIN for each person. They log in with name + PIN and see only their own data. "Open" lets you view or enter as that person.</div>
 <div id="list"></div>
 <div class="row"><a class="btn" href="#" id="out">Log out</a></div>
@@ -23,7 +24,7 @@ button,a.btn{font:inherit;padding:9px 12px;border:1.5px solid #cfc9b8;border-rad
 const $=id=>document.getElementById(id);
 const tok=localStorage.getItem('wa_admin');
 if(!tok)location.href='index.html';
-const APP1=['Suman','Dinesh','Ajeet','Siraj','Sunil'],APP2=['Pandey ji','Sunil'];
+const APP1=['Suman','Dinesh','Ajeet','Siraj','Sunil'],APP2=['Pandey ji','Sunil'],SALE=['Sandeep'];
 function msg(t){const m=$('msg');m.textContent=t;m.style.display='block';setTimeout(()=>m.style.display='none',3000)}
 async function api(opt){const o=opt||{};o.headers=Object.assign({'Content-Type':'application/json',Authorization:'Bearer '+tok},o.headers||{});
  const r=await fetch('/api/admin',o);const j=await r.json();
@@ -33,7 +34,7 @@ async function load(){
  const j=await api();
  $('list').innerHTML=j.users.map(u=>'<div class="box"><b>'+u.name+'</b> <span class="'+(u.hasPin?'ok':'bad')+'">'+(u.hasPin?'PIN set':'No PIN yet')+'</span>'+
   '<div class="row"><input id="p_'+u.name.replace(' ','_')+'" type="password" inputmode="numeric" maxlength="6" placeholder="New PIN"><button data-set="'+u.name+'">Set PIN</button></div>'+
-  '<div class="row">'+(APP1.includes(u.name)?'<button data-open="'+u.name+'" data-app="app1.html">Open App 1</button>':'')+(APP2.includes(u.name)?'<button data-open="'+u.name+'" data-app="app2.html">Open App 2</button>':'')+'</div></div>').join('');
+  '<div class="row">'+(APP1.includes(u.name)?'<button data-open="'+u.name+'" data-app="app1.html">Open App 1</button>':'')+(APP2.includes(u.name)?'<button data-open="'+u.name+'" data-app="app2.html">Open App 2</button>':'')+(SALE.includes(u.name)?'<button data-open="'+u.name+'" data-app="sale.html">Open Sale Orders</button>':'')+'</div></div>').join('');
  document.querySelectorAll('[data-set]').forEach(b=>b.onclick=async()=>{
   const n=b.dataset.set,pin=$('p_'+n.replace(' ','_')).value;
   try{await api({method:'POST',body:JSON.stringify({action:'setpin',name:n,pin})});msg('PIN saved for '+n);load()}catch(e){msg(e.message)}});
