@@ -1,79 +1,131 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Order Book</title>
-<style>:root{--t:#0f766e;--ink:#17202a;--mute:#7b8794;--line:#e5e7eb}
-*{box-sizing:border-box}body{margin:0;background:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:16px}
-.w{max-width:720px;margin:0 auto;padding:22px 18px 90px}
-h1{font-size:26px;font-weight:650;margin:0 0 4px}h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600;margin:28px 0 10px}
-.sub{color:var(--mute);font-size:14px}.top{display:flex;justify-content:space-between;align-items:baseline}
-a.lo{color:var(--mute);font-size:14px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
-.row b{font-weight:600}.row .m{color:var(--mute);font-size:14px;margin-top:2px}
-.bar{height:6px;background:#eef2f2;border-radius:3px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--t)}
-.btn{border:1px solid var(--t);color:var(--t);background:#fff;border-radius:8px;padding:8px 16px;font:inherit;font-size:15px;cursor:pointer}
-.btn.f{background:var(--t);color:#fff}.btn:disabled{opacity:.5}
-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;gap:34px;padding:12px 0 16px}
-nav a{color:var(--mute);text-decoration:none;font-size:15px}nav a.on{color:var(--t);font-weight:650}
-label{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mute);margin:18px 0 6px}
-input,select{width:100%;font:inherit;font-size:17px;border:0;border-bottom:1px solid var(--line);padding:8px 0;background:transparent;outline:none;border-radius:0}
-input:focus,select:focus{border-bottom-color:var(--t)}
-.err{color:#b3261e;font-size:14px;margin-top:10px;min-height:18px}
-.t{color:var(--t)}.red{color:#b3261e}
-#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--t);color:#fff;padding:8px 18px;border-radius:20px;display:none;font-size:14px}
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}.sheet{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:20px}
-.opt{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}.opt.on{color:var(--t);font-weight:650}
+<style>
+*{box-sizing:border-box;margin:0}
+:root{--bg:#f5f6f8;--ink:#101828;--mute:#667085;--line:#eaecf0;--a:#0e9f83;--a2:#e7f6f2;--amb:#b54708;--amb2:#fffaeb;--red:#b3261e}
+body{background:var(--bg);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:16px}
+.w{max-width:560px;margin:0 auto;padding:14px 18px 100px}
+.top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 16px}
+.who{display:flex;align-items:center;gap:10px}.av{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:600}
+.who small{display:block;color:var(--mute);font-size:12px}.who b{font-size:15px}
+.chipd{background:#fff;border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:12.5px;color:var(--mute);font-weight:500;text-decoration:none}
+h1{font-size:30px;letter-spacing:-.02em;font-weight:700;margin-bottom:16px}
+.sub{color:var(--mute);font-size:13px;margin:-8px 0 14px}
+.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 0 0 1px var(--line)}
+.lab{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.ord{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.ord b{font-size:17px}.ord small{display:block;color:var(--mute);font-size:13px;margin-top:3px}
+.pill{background:var(--a2);color:var(--a);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.tag{font-size:11px;font-weight:600;border-radius:20px;padding:3px 9px;background:#eef0f3;color:var(--mute);white-space:nowrap}.tag.g{background:var(--a2);color:var(--a)}.tag.a{background:var(--amb2);color:var(--amb)}
+.bar{height:6px;background:#eef0f3;border-radius:3px;margin:5px 0 0;overflow:hidden}.bar i{display:block;height:100%;background:var(--a);border-radius:3px}.bar.am i{background:var(--amb)}
+.bi{padding:7px 0 2px}.bi .h{display:flex;justify-content:space-between;font-size:12.5px;gap:8px}.bi .h span:first-child{font-weight:600}.bi .h span:last-child{font-weight:700;color:var(--a);font-variant-numeric:tabular-nums;white-space:nowrap}.bi .h span.am{color:var(--amb)}.bi small{display:block;color:var(--mute);font-size:11.5px;margin-top:1px}
+.need{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:13.5px;color:var(--mute)}.need b{color:var(--a);font-size:14px}
+.btn{border:0;border-radius:12px;background:var(--a);color:#fff;font:inherit;font-weight:600;font-size:14px;padding:9px 18px;cursor:pointer}.btn.o{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.5}
+.tabs{display:flex;gap:6px;margin-bottom:14px}.tabs button{padding:8px 13px;border-radius:20px;font:inherit;font-size:13px;font-weight:600;color:var(--mute);background:#fff;border:1px solid var(--line)}.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.kp{display:flex;gap:10px;margin-bottom:12px}.kp .card{flex:1;margin:0;padding:14px}.kp b{font-size:26px;display:block;letter-spacing:-.02em}.kp small{color:var(--mute);font-size:12px}.kp .a b{color:var(--a)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}.row.f{border-top:0;padding-top:0}.row b{font-size:14.5px}.row small{display:block;color:var(--mute);font-size:12px;margin-top:2px}.row small.old{color:var(--amb)}.row>span{font-weight:700;color:var(--a);font-size:17px;font-variant-numeric:tabular-nums}.row.ty{padding:6px 0 6px 12px;border-top:1px dashed var(--line)}.row.ty b{font-size:13px;font-weight:500;color:var(--mute)}.row.ty>span{font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;margin-top:8px}th{font-size:10.5px;color:var(--mute);font-weight:600;text-align:right;padding:0 0 6px;text-transform:uppercase;letter-spacing:.04em}td{text-align:right;padding:8px 0;border-top:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
+.red{color:var(--red)}.t{color:var(--a)}.err{color:var(--red);font-size:14px;margin:8px 0}.mut{color:var(--mute);font-size:13px}
+nav{position:fixed;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;padding-top:9px;z-index:5}
+nav a{text-align:center;font-size:11.5px;color:#98a2b3;font-weight:500;text-decoration:none;flex:1;max-width:120px}nav a.on{color:var(--a);font-weight:700}nav svg{display:block;margin:0 auto 4px}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 20px;border-radius:30px;display:none;font-size:14px;z-index:20}
+.ov{position:fixed;inset:0;background:rgba(16,24,40,.4);display:flex;align-items:flex-end;justify-content:center;z-index:30}.sheet{background:#fff;width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:20px}
+.tile{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);margin-bottom:8px;cursor:pointer}.tile .r{width:20px;height:20px;border-radius:50%;border:2px solid #d0d5dd;flex:none}.tile .t2{flex:1;font-weight:600;font-size:15px}.tile small{color:var(--mute);font-size:12px}.tile.on{border-color:var(--a);background:var(--a2)}.tile.on .r{border-color:var(--a);background:radial-gradient(var(--a) 42%,transparent 46%)}
+label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:14px 0 6px}
+input{width:100%;font:inherit;font-size:22px;font-weight:700;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;outline:none}
 </style></head><body><div class="w"><div id="toast"></div>
-<div class="top"><div><h1>Order Book</h1><div class="sub">Admin</div></div><a class="lo" href="admin.html">Admin home</a></div>
-<div id="main"></div></div>
-<nav><a href="#book" id="n_book">Order Book</a><a href="#demand" id="n_demand">Stamping demand</a><a href="#rotor" id="n_rotor">Rotor</a></nav>
+<div class="top"><div class="who"><div class="av">J</div><div><small>Admin</small><b>Jatin</b></div></div><a class="chipd" href="admin.html">PINs</a></div>
+<h1 id="ttl">Overview</h1><div id="main"></div></div>
+<nav>
+<a href="#overview" id="n_overview"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l8-7 8 7v8H3z"/></svg>Overview</a>
+<a href="#book" id="n_book"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h12v14H5zM8 8h6M8 12h6"/></svg>Orders</a>
+<a href="#demand" id="n_demand"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18V9M11 18V4M18 18v-6"/></svg>Contractors</a>
+<a href="#rotor" id="n_rotor"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M11 7v8"/></svg>Rotor</a></nav>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
 const fmt=n=>Number(n).toLocaleString("en-IN");
 const dm=d=>{if(!d)return "";const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return +d.slice(8,10)+" "+m[+d.slice(5,7)-1]};
 function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2200)}
-
 const TOKEN=localStorage.getItem("wa_admin");if(!TOKEN){location.href="index.html"}
 async function api(opt){opt=opt||{};opt.headers=Object.assign({},opt.headers||{},{Authorization:"Bearer "+TOKEN});const r=await fetch("/api/o",opt);if(r.status===401){localStorage.removeItem("wa_admin");location.href="index.html";return}const j=await r.json();if(!r.ok)throw new Error(j.error||"error");return j}
-let D=null;
-const bar=(a,b)=>'<div class="bar"><i style="width:'+(b?Math.min(100,Math.round(100*a/b)):0)+'%"></i></div>';
+let D=null,filt="open";
+const K=t=>String(t||"").trim().toUpperCase();
+const pc=(a,b)=>b>0?Math.max(0,Math.min(100,Math.round(100*a/b))):0;
+// one labelled bar: label, have, total, optional small text, amber when short
+function bi(lab,have,tot,sub,short){return '<div class="bi"><div class="h"><span>'+esc(lab)+'</span><span'+(short?' class="am"':'')+'>'+fmt(have)+' / '+fmt(tot)+'</span></div><div class="bar'+(short?' am':'')+'"><i style="width:'+pc(have,tot)+'%"></i></div>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</div>'}
+const woundOf=oid=>D.issues.filter(i=>i.order_id===oid).reduce((a,i)=>a+i.wound,0);
+const givenOf=oid=>D.issues.filter(i=>i.order_id===oid).reduce((a,i)=>a+i.given,0);
 function issueSheet(o){
  const left=o.qty-o.issued,o2=document.createElement("div");o2.className="ov";let pick=null;
- o2.innerHTML='<div class="sheet"><div class="sub">Issue order #'+esc(o.order_no)+' | '+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+fmt(left)+' left</div>'+
-  D.contractors.map(c=>{const d=D.demand.find(x=>x.contractor===c);return '<div class="opt" data-v="'+c+'"><span>'+c+'</span><span class="sub">'+(d?'left '+fmt(d.left)+' | holds '+fmt(d.holds):'no open order')+'</span></div>'}).join("")+
+ o2.innerHTML='<div class="sheet"><div class="mut" style="margin-bottom:12px">Issue order #'+esc(o.order_no)+' | '+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+fmt(left)+' left</div>'+
+  D.contractors.map(c=>{const d=D.demand.find(x=>x.contractor===c),h=d?d.rows.reduce((a,r)=>a+r.holds,0):0;return '<div class="tile" data-v="'+c+'"><span class="r"></span><span class="t2">'+c+'</span><small>'+(d?'left '+fmt(d.left)+' | holds '+fmt(h):'no open order')+'</small></div>'}).join("")+
   '<label>Quantity to issue</label><input id="iq" type="number" inputmode="numeric" value="'+left+'"><div class="err" id="ie"></div>'+
-  '<div style="display:flex;gap:10px;margin-top:12px"><button class="btn f" id="ig" style="flex:1">Issue</button><button class="btn" id="ic">Cancel</button></div></div>';
+  '<div style="display:flex;gap:10px;margin-top:8px"><button class="btn" id="ig" style="flex:1;padding:15px">Issue</button><button class="btn o" id="ic">Cancel</button></div></div>';
  document.body.appendChild(o2);o2.onclick=e=>{if(e.target===o2)o2.remove()};$("ic").onclick=()=>o2.remove();
- o2.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{pick=b.dataset.v;o2.querySelectorAll(".opt").forEach(x=>x.classList.toggle("on",x===b))});
+ o2.querySelectorAll(".tile").forEach(b=>b.onclick=()=>{pick=b.dataset.v;o2.querySelectorAll(".tile").forEach(x=>x.classList.toggle("on",x===b))});
  $("ig").onclick=async()=>{if(!pick){$("ie").textContent="Choose a contractor";return}$("ig").disabled=true;
   try{await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"issue",order_id:o.id,contractor:pick,qty:Number($("iq").value)})});o2.remove();toast("Issued");await load();view()}catch(e){$("ie").textContent=e.message;$("ig").disabled=false}};
 }
 function book(){
- const rec=D.orders.filter(o=>o.qty-o.issued>0);
- let h='<h2>Orders received</h2>';
- if(!rec.length)h+='<div class="sub">No new orders.</div>';
- rec.forEach(o=>{h+='<div class="row"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><div class="m">'+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.due?' | due '+dm(o.due):'')+'</div></div><div style="display:flex;align-items:center;gap:14px"><div style="text-align:right"><b>'+fmt(o.qty-o.issued)+'</b><div class="m">to issue</div></div><button class="btn f" data-i="'+o.id+'">Issue</button></div></div>'});
- h+='<h2>Order progress</h2>';
- if(!D.issues.length)h+='<div class="sub">Nothing issued yet.</div>';
- D.issues.forEach(i=>{h+='<div style="padding:14px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b>'+esc(i.contractor)+' <span class="sub">#'+esc(i.order_no)+' | '+esc(i.winding_type)+'</span></b><span>'+fmt(i.wound)+' / '+fmt(i.qty)+'</span></div>'+bar(i.wound,i.qty)+'<div class="sub" style="margin-top:6px">Stamping '+esc(i.stator_type||'')+(i.used?' <b style="color:var(--t)">| used '+esc(i.used)+' (different)</b>':'')+'</div><div class="sub" style="margin-top:2px">Given to Pandey ji '+fmt(i.given)+(i.due?' | due '+dm(i.due):'')+'</div></div>'});
+ const L=D.orders.map(o=>({o,w:woundOf(o.id),g:givenOf(o.id)}));
+ const isDone=x=>x.g>=x.o.qty;
+ const list=L.filter(x=>filt==="all"||(filt==="done")===isDone(x));
+ let h='<div class="tabs">'+[["open","Open"],["done","Done"],["all","All"]].map(t=>'<button data-f="'+t[0]+'" class="'+(filt===t[0]?"on":"")+'">'+t[1]+'</button>').join("")+'</div>';
+ if(!list.length)h+='<div class="card mut">Nothing here.</div>';
+ list.forEach(x=>{const o=x.o,left=o.qty-o.issued,mine=D.issues.filter(i=>i.order_id===o.id),used=mine.filter(i=>i.used);
+  h+='<div class="card"><div class="ord"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><small>'+(o.created?dm(o.created)+' | ':'')+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.due?' | due '+dm(o.due):'')+'</small></div><span class="'+(isDone(x)?'tag g':(o.issued?'pill':'tag'))+'">'+(isDone(x)?'Done':(o.issued?'In progress':'New'))+'</span></div>'+
+   '<div style="margin-top:8px">'+bi('Issued to contractors',o.issued,o.qty)+bi('Stators wound',x.w,o.qty)+bi('Given to Pandey ji',x.g,o.qty)+'</div>'+
+   (mine.length?'<div class="mut" style="margin-top:10px">'+mine.map(i=>esc(i.contractor)+' '+fmt(i.wound)+' / '+fmt(i.qty)+' wound'+(i.due?'':'')).join(' | ')+'</div>':'')+
+   (used.length?'<div class="need"><span>Used a different stamping</span><span class="tag a">'+used.map(i=>esc(i.used)).join(', ')+'</span></div>':'')+
+   (left>0?'<div class="need"><span>'+fmt(left)+' left to issue</span><button class="btn" data-i="'+o.id+'">Issue</button></div>':'')+'</div>'});
  $("main").innerHTML=h;
  document.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>issueSheet(D.orders.find(o=>o.id==b.dataset.i)));
+ document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{filt=b.dataset.f;book()});
 }
 function demand(){
- let h='<h2>Stamping by contractor</h2><div class="sub">Bar = stators wound / issued. Per stamping type: Need = issued - wound for orders with that stamping. Holds = that exact type with the contractor (Midland sent - wound).</div>';
+ let h='<div class="sub">All bars are out of the winding issued to that contractor.</div>';
  if(D.midlandError)h+='<div class="err">Midland not readable: '+esc(D.midlandError)+'</div>';
- if(!D.demand.length)h+='<div class="sub" style="margin-top:14px">No issued orders yet.</div>';
- D.demand.forEach(d=>{const s=d.send>0;h+='<div style="padding:14px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b'+(s?' class="red"':'')+'>'+esc(d.contractor)+'</b><span>'+fmt(d.wound)+' / '+fmt(d.qty)+'</span></div>'+bar(d.wound,d.qty)+
-  '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:8px;font-size:14px"><colgroup><col><col style="width:70px"><col style="width:70px"><col style="width:84px"></colgroup><tr style="color:var(--mute);text-align:right"><td style="text-align:left">Stamping</td><td>Need</td><td>Holds</td><td>Send</td></tr>'+
-  d.rows.map(r=>'<tr style="text-align:right;border-top:1px solid var(--line)"><td style="text-align:left;padding:7px 0">'+esc(r.type)+'</td><td>'+(r.need?fmt(r.need):'-')+'</td><td>'+fmt(r.holds)+'</td><td>'+(r.send>0?'<span class="red"><b>'+fmt(r.send)+'</b></span>':(r.need?'<span class="t">ok</span>':'<span class="sub">not needed</span>'))+'</td></tr>').join('')+'</table></div>'});
+ if(!D.demand.length)h+='<div class="card mut">No issued orders yet.</div>';
+ D.demand.forEach(d=>{
+  const sShort=d.stampHave<d.qty,rShort=d.rotorNeed>0&&d.rotorHave<d.rotorNeed,ok=!sShort&&!rShort;
+  h+='<div class="card"><div class="ord"><div><b>'+esc(d.contractor)+'</b><small>Issued '+fmt(d.qty)+' winding</small></div><span class="tag '+(ok?'g':'a')+'">'+(ok?'Ready':'Short')+'</span></div>'+
+   bi('Stators made',d.wound,d.qty,fmt(d.left)+' still to wind')+
+   bi('Stamping from Midland',d.stampHave,d.qty,sShort?'Short '+fmt(d.qty-d.stampHave)+' for '+fmt(d.qty):'Covered for '+fmt(d.qty),sShort)+
+   (d.rotorNeed>0?bi('Rotor from Midland',d.rotorHave,d.rotorNeed,rShort?'Short '+fmt(d.rotorNeed-d.rotorHave)+' for '+fmt(d.rotorNeed)+' (shared stock)':'Covered for '+fmt(d.rotorNeed),rShort):'<div class="bi"><div class="h"><span>Rotor from Midland</span><span style="color:var(--mute)">-</span></div><small>No rotor type chosen in these orders</small></div>')+
+   '<table><tr><th>Stamping</th><th>Need</th><th>Holds</th><th>Send</th></tr>'+d.rows.map(r=>'<tr><td>'+esc(r.type)+'</td><td>'+(r.need?fmt(r.need):'-')+'</td><td>'+fmt(r.holds)+'</td><td>'+(r.send>0?'<b class="red">'+fmt(r.send)+'</b>':(r.need?'<span class="t">ok</span>':'<span class="mut">not needed</span>'))+'</td></tr>').join('')+'</table></div>'});
  $("main").innerHTML=h;
 }
 function rotor(){
- let h='<h2>Rotor (from Midland)</h2><div class="sub">Stock from Midland. Need = quantity of open orders (with this rotor) not yet wound.</div>';
- if(!D.rotor.length)h+='<div class="sub" style="margin-top:14px">No rotor stock or rotor orders yet.</div>';
- D.rotor.forEach(r=>{const s=r.need>r.stock;h+='<div class="row"><div><b>'+esc(r.name)+'</b><div class="m">Need '+fmt(r.need)+'</div></div><div style="text-align:right"><b'+(s?' class="red"':'')+'>'+fmt(r.stock)+'</b><div class="m">in stock'+(s?' | short '+fmt(r.need-r.stock):'')+'</div></div></div>'});
+ let h='<div class="sub">Stock from Midland. Need = quantity of open orders with this rotor not yet wound.</div>';
+ const st=D.rotor.reduce((a,r)=>a+Math.max(0,r.stock),0),nd=D.rotor.reduce((a,r)=>a+r.need,0);
+ h+='<div class="kp"><div class="card a"><small>In stock</small><b>'+fmt(st)+'</b></div><div class="card"><small>Needed</small><b>'+fmt(nd)+'</b></div></div>';
+ if(!D.rotor.length)h+='<div class="card mut">No rotor stock or rotor orders yet.</div>';
+ else h+='<div class="card"><div class="lab">Rotor by type</div>'+D.rotor.map(r=>bi(r.name,Math.max(0,r.stock),r.need||Math.max(0,r.stock),r.need>r.stock?'Short '+fmt(r.need-r.stock):(r.need?'Covered':'No open orders'),r.need>r.stock)).join('')+'</div>';
  $("main").innerHTML=h;
 }
-function view(){const p=(location.hash||"#book").slice(1);["book","demand","rotor"].forEach(k=>$("n_"+k).className=k===p?"on":"");({book,demand,rotor}[p]||book)()}
+function overview(){
+ const O=D.overview||{};
+ if(O.error){$("main").innerHTML='<div class="err">Could not load overview: '+esc(O.error)+'</div>';return}
+ let h='<div class="kp"><div class="card a"><small>Ready stators</small><b>'+fmt(O.ready_stators)+'</b></div><div class="card a"><small>Ready motors</small><b>'+fmt(O.ready_motors)+'</b></div></div>';
+ h+='<div class="card"><div class="lab">Ready motors - who has them</div>';
+ O.motors.forEach((m,i)=>{h+='<div class="row'+(i?'':' f')+'"><div><b>'+esc(m.name)+'</b><small>made '+fmt(m.made)+' | dispatched '+fmt(m.sent)+'</small></div><span>'+fmt(m.ready)+'</span></div>';m.from.forEach(f=>{h+='<div class="row ty"><div><b>from '+esc(f.name)+'</b></div><span>'+fmt(f.ready)+'</span></div>'})});
+ h+='</div><div class="card"><div class="lab">Ready stators - by contractor</div>';
+ if(!O.stators.length)h+='<div class="mut">No stators wound yet.</div>';
+ O.stators.forEach((s,i)=>{h+='<div class="row'+(i?'':' f')+'"><div><b>'+esc(s.name)+'</b><small>wound '+fmt(s.wound)+' | given '+fmt(s.given)+(s.name==="Sunil"?' | kept with himself':'')+'</small>'+(s.oldest_days!=null&&s.ready>0?'<small'+(s.oldest_days>=5?' class="old"':'')+'>oldest ready: '+s.oldest_days+' day'+(s.oldest_days===1?'':'s')+'</small>':'')+'</div><span>'+fmt(s.ready)+'</span></div>';
+  if(s.types.length>1)s.types.forEach(t=>{h+='<div class="row ty"><div><b>'+esc(t.name)+'</b></div><span>'+fmt(t.ready)+'</span></div>'})});
+ h+='</div>';
+ // demand by winding type: order qty vs wound
+ const w={};D.orders.forEach(o=>{const k=o.winding_type||"-";const x=w[k]||(w[k]={q:0,m:0});x.q+=o.qty;x.m+=woundOf(o.id)});
+ const wk=Object.keys(w).sort();
+ if(wk.length)h+='<div class="card"><div class="lab">Demand by winding type</div>'+wk.map(k=>bi(k,w[k].m,w[k].q,fmt(Math.max(0,w[k].q-w[k].m))+' left to wind')).join('')+'</div>';
+ // stamping demand: left to wind vs stamping held by contractors
+ const s={};D.orders.forEach(o=>{const k=K(o.stator_type);if(!k)return;const x=s[k]||(s[k]={n:o.stator_type,need:0,have:0});x.need+=Math.max(0,o.qty-woundOf(o.id))});
+ D.demand.forEach(d=>d.rows.forEach(r=>{const k=K(r.type);if(s[k])s[k].have+=r.holds}));
+ const sk=Object.keys(s).filter(k=>s[k].need>0).sort();
+ if(sk.length)h+='<div class="card"><div class="lab">Stamping demand vs stock with contractors</div>'+sk.map(k=>bi(s[k].n,Math.min(s[k].have,s[k].need),s[k].need,s[k].have>=s[k].need?'Enough stamping with contractors':'Short '+fmt(s[k].need-s[k].have)+' (have '+fmt(s[k].have)+')',s[k].have<s[k].need)).join('')+'</div>';
+ $("main").innerHTML=h;
+}
+function view(){const p=(location.hash||"#overview").slice(1);["overview","book","demand","rotor"].forEach(k=>$("n_"+k).className=k===p?"on":"");$("ttl").textContent=({overview:"Overview",book:"Order Book",demand:"Contractors",rotor:"Rotor"})[p]||"Overview";({overview,book,demand,rotor}[p]||overview)()}
 async function load(){D=await api()}
 async function route(){try{await load();view()}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
 window.onhashchange=()=>D?view():route();route();
