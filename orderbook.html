@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Order Book</title>
 <style>:root{--t:#0f766e;--ink:#17202a;--mute:#7b8794;--line:#e5e7eb}
@@ -55,7 +54,7 @@ function book(){
  rec.forEach(o=>{h+='<div class="row"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><div class="m">'+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.due?' | due '+dm(o.due):'')+'</div></div><div style="display:flex;align-items:center;gap:14px"><div style="text-align:right"><b>'+fmt(o.qty-o.issued)+'</b><div class="m">to issue</div></div><button class="btn f" data-i="'+o.id+'">Issue</button></div></div>'});
  h+='<h2>Order progress</h2>';
  if(!D.issues.length)h+='<div class="sub">Nothing issued yet.</div>';
- D.issues.forEach(i=>{h+='<div style="padding:14px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b>'+esc(i.contractor)+' <span class="sub">#'+esc(i.order_no)+' | '+esc(i.winding_type)+'</span></b><span>'+fmt(i.wound)+' / '+fmt(i.qty)+'</span></div>'+bar(i.wound,i.qty)+'<div class="sub" style="margin-top:6px">Given to Pandey ji '+fmt(i.given)+(i.due?' | due '+dm(i.due):'')+'</div></div>'});
+ D.issues.forEach(i=>{h+='<div style="padding:14px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b>'+esc(i.contractor)+' <span class="sub">#'+esc(i.order_no)+' | '+esc(i.winding_type)+'</span></b><span>'+fmt(i.wound)+' / '+fmt(i.qty)+'</span></div>'+bar(i.wound,i.qty)+'<div class="sub" style="margin-top:6px">Stamping '+esc(i.stator_type||'')+(i.used?' <b style="color:var(--t)">| used '+esc(i.used)+' (different)</b>':'')+'</div><div class="sub" style="margin-top:2px">Given to Pandey ji '+fmt(i.given)+(i.due?' | due '+dm(i.due):'')+'</div></div>'});
  $("main").innerHTML=h;
  document.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>issueSheet(D.orders.find(o=>o.id==b.dataset.i)));
 }
