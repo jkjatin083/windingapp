@@ -52,12 +52,12 @@ function pickField(id,label,key){return '<label>'+label+'</label><div id="'+id+'
 function form(){
  let h='<h2>New order</h2>';
  h+='<label>Customer</label><input id="f_customer" value="'+esc(F.customer)+'" placeholder="Customer name">';
- h+=pickField("p_st","Stator type","stator_type")+pickField("p_wd","Winding type","winding_type")+pickField("p_mt","Motor type","motor_type")+pickField("p_ro","Rotor (optional)","rotor_item");
+ h+=pickField("p_st","Stamping type","stator_type")+pickField("p_wd","Winding type","winding_type")+pickField("p_mt","Motor type","motor_type")+pickField("p_ro","Rotor (optional)","rotor_item");
  h+='<label>Quantity</label><input id="f_qty" type="number" inputmode="numeric" min="1" value="'+esc(F.qty)+'" placeholder="0">';
  h+='<label>Due date (optional)</label><input id="f_due" type="date" value="'+esc(F.due)+'">';
  h+='<button class="btn f" id="go" style="width:100%;margin-top:26px;padding:14px;font-size:17px">Save order</button><div class="err" id="err"></div>';
  $("main").innerHTML=h;
- $("p_st").onclick=()=>{grab();sheet("Stator type",D.stamps,F.stator_type,v=>{F.stator_type=v;form()})};
+ $("p_st").onclick=()=>{grab();sheet("Stamping type",D.stamps,F.stator_type,v=>{F.stator_type=v;form()})};
  $("p_wd").onclick=()=>{grab();sheet("Winding type",D.winding,F.winding_type,v=>{F.winding_type=v;form()},"winding")};
  $("p_mt").onclick=()=>{grab();sheet("Motor type",D.motor,F.motor_type,v=>{F.motor_type=v;form()},"motor")};
  $("p_ro").onclick=()=>{grab();sheet("Rotor",["(none)"].concat(D.rotors),F.rotor_item,v=>{F.rotor_item=v==="(none)"?"":v;form()})};
