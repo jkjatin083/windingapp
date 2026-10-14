@@ -65,11 +65,17 @@ export default async function handler(req, res) {
     orders.forEach(o => { if (!o.rotor_item) return; const wnd = issues.filter(i => i.order_id === o.id).reduce((a, i) => a + i.wound, 0); need[o.rotor_item] = (need[o.rotor_item] || 0) + Math.max(0, o.qty - wnd); });
     const rotor = rotorRows.map(r => ({ name: r.name, stock: r.stock, need: need[r.name] || 0 })).filter(r => r.stock !== 0 || r.need > 0);
 
+    // Demand per contractor AND per stamping type: need = (issued - wound) of orders using that stamping; holds = stamping of that exact type with the contractor.
+    const K = t => String(t || '').trim().toUpperCase();
     const demand = CONTRACTORS.map(c => {
       const mine = issues.filter(i => i.contractor === c);
       const qty = mine.reduce((a, i) => a + i.qty, 0), wound = mine.reduce((a, i) => a + i.wound, 0);
-      const left = Math.max(0, qty - wound), holds = Math.max(0, Object.values(held[c].types).reduce((a, v) => a + v, 0));
-      return { contractor: c, qty, wound, left, holds, send: Math.max(0, left - holds), types: held[c].types };
+      const rows = {};
+      mine.forEach(i => { const k = K(i.stator_type); const r = rows[k] || (rows[k] = { type: i.stator_type || '(no stamping)', need: 0, holds: 0 }); r.need += Math.max(0, i.qty - i.wound); });
+      Object.entries(held[c].types).forEach(([t, v]) => { const k = K(t); if (v <= 0) return; const r = rows[k] || (rows[k] = { type: t, need: 0, holds: 0 }); r.holds += v; });
+      const list = Object.values(rows).map(r => ({ ...r, send: Math.max(0, r.need - r.holds) })).sort((a, b) => b.need - a.need || a.type.localeCompare(b.type));
+      const left = Math.max(0, qty - wound);
+      return { contractor: c, qty, wound, left, send: list.reduce((a, r) => a + r.send, 0), rows: list };
     }).filter(d => d.qty > 0);
     return res.status(200).json({ orders, issues, demand, rotor, midlandError, contractors: CONTRACTORS });
   } catch (e) {
