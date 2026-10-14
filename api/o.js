@@ -2,6 +2,26 @@ import { neon } from '@neondatabase/serverless';
 import { verify } from './_auth.js';
 // Admin Order Book: orders (from sale app), progress (contractor entries), Midland stamping + rotor.
 const START = '2026-10-01';
+
+// Stators in hand with the motor makers (Pandey ji / Sunil): given to them minus motors they made, per source contractor + stamping type
+function inHand(ev) {
+  const norm = s => String(s || '').trim().toLowerCase();
+  const makers = { 'pandey ji': 'Pandey ji', 'sunil': 'Sunil' };
+  const acc = {};
+  const slot = (maker, src, ty) => {
+    const k = [norm(maker), norm(src), norm(ty || '-')].join('|');
+    return acc[k] || (acc[k] = { maker: makers[norm(maker)], name: String(src).trim() + ' - ' + (ty || '-'), sent: 0, made: 0 });
+  };
+  ev.forEach(e => {
+    if (e.kind === 'sent' && makers[norm(e.party)] && e.contractor) slot(e.party, e.contractor, e.stype).sent += e.q;
+    else if ((e.kind === 'made' || (e.kind === 'dispatch' && e.party)) && makers[norm(e.contractor)] && e.party) slot(e.contractor, e.party, e.stype).made += e.q;
+  });
+  return ['Pandey ji', 'Sunil'].map(m => {
+    const rows = Object.values(acc).filter(x => x.maker === m).map(x => ({ name: x.name, sent: x.sent, made: x.made, ready: x.sent - x.made }))
+      .filter(x => x.ready > 0).sort((a, b) => b.ready - a.ready);
+    return { name: m, rows, total: rows.reduce((a, r) => a + r.ready, 0) };
+  }).filter(m => m.rows.length);
+}
 const CONTRACTORS = ['Suman', 'Dinesh', 'Ajeet', 'Siraj', 'Sunil'];
 function norm(p) {
   const k = String(p || '').toLowerCase().replace(/[^a-z]/g, '');
@@ -120,7 +140,8 @@ export default async function handler(req, res) {
       }).filter(s => s.wound || s.given);
       const motors = Object.values(mot).map(m => ({ name: m.name, made: m.made, sent: m.sent, ready: m.made - m.sent,
         from: Object.values(m.from).map(t => ({ name: t.name, made: t.made, sent: t.sent, ready: t.made - t.sent })).sort((a, b) => b.ready - a.ready) }));
-      overview = { stators, motors, ready_stators: stators.reduce((a, s) => a + s.ready, 0), ready_motors: motors.reduce((a, m) => a + m.ready, 0) };
+      const inhand = inHand(ev);
+      overview = { stators, motors, inhand, ready_stators: stators.reduce((a, s) => a + s.ready, 0) + inhand.reduce((a, m) => a + m.total, 0), ready_motors: motors.reduce((a, m) => a + m.ready, 0) };
     } catch (e) { overview = { error: String(e.message || e) }; }
     return res.status(200).json({ orders, issues, overview, demand, rotor, midlandError, contractors: CONTRACTORS });
   } catch (e) {
