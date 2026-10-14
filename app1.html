@@ -35,6 +35,7 @@ td{padding:11px 3px;border-bottom:1px solid var(--line)}td.h{color:var(--g);font
 .bar{height:10px;border:1px solid #bbb;border-radius:5px;margin-top:12px}.bar i{display:block;height:100%;background:var(--g);border-radius:4px}
 #toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--g);color:#fff;padding:10px 20px;border-radius:30px;display:none;z-index:9}
 a.lo{color:var(--mute);font-size:14px}
+.opt{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:14px 0;cursor:pointer}.opt .r{width:18px;height:18px;border:1.5px solid var(--line);border-radius:50%;margin-right:12px;flex:none}.opt .l{display:flex;align-items:center}.opt .n{color:var(--mute);font-variant-numeric:tabular-nums}.opt.on{border-bottom:2px solid var(--g)}.opt.on b{color:var(--g)}.opt.on .n{color:var(--g)}.opt.on .r{border-color:var(--g);background:radial-gradient(var(--g) 45%,#fff 50%)}.opt.dim{opacity:.45;cursor:default}
 </style></head><body><div class="w">
 <div id="toast"></div>
 <div style="display:flex;justify-content:space-between;align-items:center"><span class="sub" style="margin:0" id="who"></span><a class="lo" href="#" id="lo">Log out</a></div>
@@ -63,24 +64,31 @@ function pick(root,fn){root.querySelectorAll('.chip').forEach(b=>b.onclick=()=>f
 function entryForm(kind){
  const give=kind==='give';
  let h='<div class="card"><h1>'+(give?'Give to '+esc(NEXT):'Made today')+'</h1><div class="sub">'+esc(ME)+' | '+dm(H.today)+'</div>';
- h+='<div class="lab">Stamping type</div>';
- h+=H.types.length?'<div id="st">'+chips(H.types.map(t=>[t,t]),sel.stype)+'</div>':'<div class="note">No stamping type yet. Ask Jatin.</div>';
- {const z=(H.stamp||{})[sel.stype];if(z)h+='<div class="note" style="margin:8px 0 0">From Midland: received '+fmt(z.recv)+' | made '+fmt(z.made)+' | stamping left <b>'+fmt(z.bal)+'</b></div>'}
- h+='<div class="lab">Winding type</div>';
- if(H.issues.length>1)h+='<div id="is">'+chips(H.issues.map(i=>[String(i.id),i.winding_type+' | #'+i.order_no]),String(sel.issue))+'</div>';
- else if(H.issues.length===1)h+='<div class="fixed"><span>'+esc(H.issues[0].winding_type)+'</span><small>from order #'+esc(H.issues[0].order_no)+'</small></div>';
+ const od=H.issues.find(x=>x.id===sel.issue)||H.issues[0]||null;
+ h+='<div class="lab">Order</div>';
+ if(H.issues.length>1)h+='<div id="is">'+chips(H.issues.map(i=>[String(i.id),'#'+i.order_no+' | '+i.winding_type]),String(sel.issue))+'</div>';
+ else if(H.issues.length===1)h+='<div class="fixed"><span>'+esc(H.issues[0].winding_type)+'</span><small>order #'+esc(H.issues[0].order_no)+'</small></div>';
  else h+='<div class="fixed"><span>-</span><small>no open order</small></div>';
+ if(od&&od.stator_type)h+='<div class="note" style="margin:8px 0 0">Order stamping: <b>'+esc(od.stator_type)+'</b></div>';
+ const bal=t=>give?((H.holds[t]||{held:0}).held):((H.stamp[t]||{bal:0}).bal);
+ const names=Array.from(new Set(Object.keys(H.stamp||{}).concat(give?Object.keys(H.holds||{}):[]).concat(od&&od.stator_type?[od.stator_type]:[])));
+ const opts=names.map(t=>[t,bal(t)]).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0]));
+ if(!sel.stype||bal(sel.stype)<=0){const okk=od&&od.stator_type&&bal(od.stator_type)>0?od.stator_type:(opts.find(o=>o[1]>0)||[null])[0];sel.stype=okk}
+ h+='<div class="lab">'+(give?'Stamping (stators you hold)':'Stamping used (what you hold from Midland)')+'</div>';
+ h+=opts.length?'<div id="st">'+opts.map(o=>'<div class="opt'+(o[0]===sel.stype?' on':'')+(o[1]<=0?' dim':'')+'" data-v="'+esc(o[0])+'"><div class="l"><span class="r"></span><b>'+esc(o[0])+'</b></div><span class="n">'+(o[1]>0?fmt(o[1])+' left':'0 - none with you')+'</span></div>').join('')+'</div>':'<div class="note">No stamping with you yet. Ask Jatin.</div>';
+ if(!give&&od&&od.stator_type&&sel.stype&&sel.stype!==od.stator_type)h+='<div class="note"><b style="color:var(--g)">Different from order:</b> using '+esc(sel.stype)+' for an order of '+esc(od.stator_type)+'. This is saved with the entry so Jatin can see it.</div>';
  h+='<div class="lab">'+(give?'Stators given':'Stators made')+'</div><input class="num" id="q" type="number" inputmode="numeric" min="1" placeholder="0">';
  if(give){const x=H.holds[sel.stype]||{held:0};h+='<div class="box"><div class="k">You hold</div><div class="v" id="hv">'+fmt(x.held)+'</div><div class="k" id="hk">enter a number to see balance after giving</div></div><div class="note">Cannot give more than you hold.</div>'}
  else h+='<div class="box"><div class="k">Made today so far (auto)</div><div class="v">'+fmt(H.madeToday)+'</div></div>'+(H.issues.length===1||sel.issue?'<div class="note">'+(()=>{const i=H.issues.find(x=>x.id===sel.issue);return i?'Order #'+esc(i.order_no)+': '+fmt(i.left)+' left to wind':''})()+'</div>':'');
  h+='<button class="btn" id="go">'+(give?'Give':'Save')+'</button><div class="err" id="err"></div></div>';
  $('main').innerHTML=h;
- if($('st'))pick($('st'),v=>{sel.stype=v;entryForm(kind)});
+ if($('st'))$('st').querySelectorAll('.opt:not(.dim)').forEach(b=>b.onclick=()=>{sel.stype=b.dataset.v;entryForm(kind)});
  if($('is'))pick($('is'),v=>{sel.issue=+v;entryForm(kind)});
  if(give)$('q').oninput=()=>{const x=H.holds[sel.stype]||{held:0},q=+$('q').value||0;$('hk').textContent=q?('after giving: '+fmt(x.held-q)):'enter a number to see balance after giving';$('hk').style.color=(x.held-q<0)?'#b3261e':''};
  $('go').onclick=async()=>{const q=+$('q').value;$('err').textContent='';
   if(!sel.stype){$('err').textContent='Choose the stamping type';return}
   if(!(q>0)||q!==Math.floor(q)){$('err').textContent='Enter a whole number above 0';return}
+  if(!give&&q>((H.stamp[sel.stype]||{bal:0}).bal)){$('err').textContent='You have only '+fmt((H.stamp[sel.stype]||{bal:0}).bal)+' of '+sel.stype+' stamping left';return}
   $('go').disabled=true;
   try{await api('/api/c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:give?'give':'made',stype:sel.stype,qty:q,issue_id:sel.issue})});
    toast('Saved');await home();entryForm(kind)}catch(e){$('err').textContent=e.message;$('go').disabled=false}}
