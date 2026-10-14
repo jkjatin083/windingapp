@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="hi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -38,6 +39,7 @@ small,.mut{color:#666;font-size:16px}
   <div class="mut">Winding + bush + capacitor + cover (+ kuppa) = motor.</div>
   <label>Winding to use (contractor - type)</label><select id="d_src"></select>
   <div class="mut" id="d_avail"></div>
+  <label>For which order</label><select id="d_ord"></select>
   <div class="row"><div><label>Motors made</label><input id="d_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="d_d" type="date" min="2026-10-01"></div></div>
   <label>Motors that have a kuppa (not every motor has one)</label><input id="d_kup" type="number" inputmode="numeric" min="0" placeholder="0">
   <label>Note (optional)</label><input id="d_note" maxlength="100">
@@ -48,6 +50,7 @@ small,.mut{color:#666;font-size:16px}
  <div class="box y"><h2>Dispatch motors</h2>
   <label>Motors made from which winding (contractor - type)</label><select id="x_src"></select>
   <div id="x_avail" class="mut"></div>
+  <label>For which order</label><select id="x_ord"></select>
   <div class="row"><div><label>Motors dispatched</label><input id="x_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="x_d" type="date" min="2026-10-01"></div></div>
   <label>Note (optional)</label><input id="x_note" maxlength="100">
   <button class="w100" id="x_save">Save dispatch</button><div class="err" id="x_err"></div>
@@ -226,7 +229,26 @@ function problem(src,qty,kq,d){
  if(sh.length)return 'Not enough parts: '+sh.join('; ')+'. Record the parts issue in Midland first.';
  return null;
 }
+let ORD=[];
+// Orders issued to the chosen winding contractor. mode 'made' = motors still to make, 'disp' = motors made and not yet dispatched.
+function ordFill(selId,src,mode){
+ const sel=$(selId),keep=sel.value,sp=(src||'').split('|'),ty=sp.slice(1).join('|');
+ let list=ORD.filter(o=>o.contractor===sp[0]);
+ const same=list.filter(o=>o.stator_type===ty);if(same.length)list=same;
+ list=list.map(o=>Object.assign({},o,{left:mode==='made'?o.qty-o.made:o.made-o.sent})).filter(o=>o.left>0);
+ sel.innerHTML=(src?'<option value="">'+(list.length?'Select order...':'No open order for this winding')+'</option>':'<option value="">Select winding first</option>')+list.map(o=>'<option value="'+o.id+'" data-left="'+o.left+'">'+esc('#'+o.order_no+' '+o.customer+(o.motor_type?' - '+o.motor_type:'')+(o.winding_type?' - '+o.winding_type:'')+' ('+fmt(o.left)+(mode==='made'?' left)':' ready)'))+'</option>').join('');
+ sel.value=keep;if(sel.value!==keep)sel.value='';
+ sel.dataset.n=list.length;
+}
+function ordCheck(selId,q,what){
+ const sel=$(selId);if(!Number(sel.dataset.n||0))return null;
+ if(!sel.value)return 'Select the order first';
+ const left=Number(sel.options[sel.selectedIndex].dataset.left||0);
+ if(q>left)return 'This order has only '+fmt(left)+' '+what+', you entered '+fmt(q)+'.';
+ return null;
+}
 function showAvail(){
+ ordFill('d_ord',$('d_src').value,'made');
  const v=$('d_src').value,e=$('d_avail');
  if(!v){e.textContent='';return}
  const x=windStock().find(y=>y.c+'|'+y.t===v);
@@ -234,7 +256,7 @@ function showAvail(){
  const pr=problem(v,q,Number($('d_kup').value||0),$('d_d').value);$('d_save').disabled=!!pr;
  e.innerHTML=(pr?'<div class="bad">'+esc(pr)+' Cannot save.</div>':'')+'Winding available: <b>'+fmt(x?x.recv-x.disp:0)+'</b>'+(q>0?' &nbsp; After these motors: <b'+((x?x.recv-x.disp:0)-q<0?' class="bad"':'')+'>'+fmt((x?x.recv-x.disp:0)-q)+'</b>':'');
 }
-$('d_src').onchange=showAvail;$('d_qty').oninput=showAvail;$('d_kup').oninput=showAvail;$('d_d').onchange=showAvail;
+$('d_src').onchange=showAvail;$('d_ord').onchange=()=>{};$('d_qty').oninput=showAvail;$('d_kup').oninput=showAvail;$('d_d').onchange=showAvail;
 async function del(id){if(!confirm('Delete this entry?'))return;try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id})});await load()}catch(e){msg(e.message)}}
 $('d_save').onclick=async()=>{
  const kuppa=Number($('d_kup').value||0),qty=Number($('d_qty').value),d=$('d_d').value,note=$('d_note').value,er=$('d_err');er.textContent='';
@@ -242,11 +264,12 @@ $('d_save').onclick=async()=>{
  if(!src){er.textContent='Select the winding (contractor - type) first';return}
  if(!(qty>0)){er.textContent='Enter the number of motors made';return}
  const pb=problem(src,qty,kuppa,d);if(pb){er.textContent=pb;return}
+ const po=ordCheck('d_ord',qty,'motors left to make');if(po){er.textContent=po;return}
  const sp=src.split('|');
  if(!d||d<START){er.textContent='Date must be 1 Oct 2026 or later';return}
  if(kuppa<0||kuppa>qty){er.textContent='Motors with kuppa cannot be more than motors made';return}
  $('d_save').disabled=true;
- try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:'made',contractor:ME,party:sp[0],stype:sp.slice(1).join('|'),qty,kuppa,d,note})});$('d_qty').value='';$('d_kup').value='';$('d_src').value='';$('d_note').value='';msg('Saved');await load()}catch(e){er.textContent=e.message}
+ try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:'made',contractor:ME,party:sp[0],stype:sp.slice(1).join('|'),qty,kuppa,d,note,issue_id:Number($('d_ord').value)||null})});$('d_qty').value='';$('d_kup').value='';$('d_src').value='';$('d_note').value='';msg('Saved');await load()}catch(e){er.textContent=e.message}
  showAvail();
 };
 function dProblem(src,qty,d){
@@ -257,6 +280,7 @@ function dProblem(src,qty,d){
  return null;
 }
 function showDisp(){
+ ordFill('x_ord',$('x_src').value,'disp');
  const v=$('x_src').value,e=$('x_avail');
  if(!v){e.textContent='';$('x_save').disabled=false;return}
  const x=windStock().find(y=>y.c+'|'+y.t===v),h=x?x.disp-x.sent:0,q=Number($('x_qty').value||0),pr=dProblem(v,q,$('x_d').value);$('x_save').disabled=!!pr;
@@ -269,15 +293,16 @@ $('x_save').onclick=async()=>{
  if(!src){er.textContent='Select the winding (contractor - type) first';return}
  if(!(qty>0)){er.textContent='Enter the number of motors dispatched';return}
  const pb=dProblem(src,qty,d);if(pb){er.textContent=pb;return}
+ const po=ordCheck('x_ord',qty,'motors ready to dispatch');if(po){er.textContent=po;return}
  const sp=src.split('|');
  if(!d||d<START){er.textContent='Date must be 1 Oct 2026 or later';return}
  $('x_save').disabled=true;
- try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:'mdispatch',contractor:ME,party:sp[0],stype:sp.slice(1).join('|'),qty,d,note})});$('x_src').value='';$('x_qty').value='';$('x_note').value='';msg('Saved');await load()}catch(e){er.textContent=e.message}
+ try{await api('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:'mdispatch',contractor:ME,party:sp[0],stype:sp.slice(1).join('|'),qty,d,note,issue_id:Number($('x_ord').value)||null})});$('x_src').value='';$('x_qty').value='';$('x_note').value='';msg('Saved');await load()}catch(e){er.textContent=e.message}
  showDisp();
 };
 async function load(){
  try{const [a,b]=await Promise.all([api('/api/wa'),api('/api/midland').catch(e=>({rows:[],err:e.message}))]);
-  rows=a.rows;mid=b.rows;$('err').textContent=b.err?'Could not load bush/capacitor from Midland: '+b.err:(b.extraError?'Could not load kuppa: '+b.extraError:'');render()}
+  rows=a.rows;mid=b.rows;try{ORD=(await api('/api/t')).issues}catch(e){ORD=[]}$('err').textContent=b.err?'Could not load bush/capacitor from Midland: '+b.err:(b.extraError?'Could not load kuppa: '+b.extraError:'');render()}
  catch(e){$('err').textContent='Could not load: '+e.message}
 }
 render();load();
