@@ -65,6 +65,7 @@ function entryForm(kind){
  let h='<div class="card"><h1>'+(give?'Give to '+esc(NEXT):'Made today')+'</h1><div class="sub">'+esc(ME)+' | '+dm(H.today)+'</div>';
  h+='<div class="lab">Stamping type</div>';
  h+=H.types.length?'<div id="st">'+chips(H.types.map(t=>[t,t]),sel.stype)+'</div>':'<div class="note">No stamping type yet. Ask Jatin.</div>';
+ {const z=(H.stamp||{})[sel.stype];if(z)h+='<div class="note" style="margin:8px 0 0">From Midland: received '+fmt(z.recv)+' | made '+fmt(z.made)+' | stamping left <b>'+fmt(z.bal)+'</b></div>'}
  h+='<div class="lab">Winding type</div>';
  if(H.issues.length>1)h+='<div id="is">'+chips(H.issues.map(i=>[String(i.id),i.winding_type+' | #'+i.order_no]),String(sel.issue))+'</div>';
  else if(H.issues.length===1)h+='<div class="fixed"><span>'+esc(H.issues[0].winding_type)+'</span><small>from order #'+esc(H.issues[0].order_no)+'</small></div>';
@@ -89,6 +90,7 @@ async function report(){
  let h='<div class="card"><h1>My report</h1><div class="sub">'+esc(ME)+' | only my data</div><div class="tabs">'+
   [['date','Date-wise'],['type','By type'],['order','By order']].map(t=>'<button class="chip'+(rtab===t[0]?' on':'')+'" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
  if(rtab==='date'){
+  {const ks=Object.keys(R.stamp||{}).sort();if(ks.length){h+='<div class="lab">Stamping with me</div><table><tr><th>Type</th><th>Received</th><th>Made</th><th>Left</th></tr>'+ks.map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(R.stamp[k].recv)+'</td><td>'+fmt(R.stamp[k].made)+'</td><td class="h">'+fmt(R.stamp[k].bal)+'</td></tr>').join('')+'</table>'}}
   h+='<div class="note" style="margin:0 0 8px">'+dm(R.from)+' - '+dm(R.to)+'</div>';
   if(!R.rows.length)h+='<div class="note">No entries yet.</div>';
   else{h+='<table><tr><th>Date</th><th>Stamp</th><th>Wind</th><th>Made</th><th>Given</th><th>Held</th></tr>';
