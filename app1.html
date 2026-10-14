@@ -3,45 +3,58 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Contractor</title>
 <style>
-*{box-sizing:border-box}
-:root{--g:#1f6f4a;--ink:#1a1a1a;--mute:#8a8a85;--line:#dcdcd6;--soft:#f3f7f4}
-body{margin:0;background:#f3f2ee;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:17px}
-.w{max-width:460px;margin:0 auto;padding:18px 18px 96px}
-.card{background:#fff;border:1px solid var(--line);border-radius:28px;padding:26px 22px;margin-top:10px}
-h1{font-size:30px;margin:0}.sub{color:var(--mute);font-size:15px;margin:6px 0 22px}
-.lab{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:20px 0 8px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{padding:11px 18px;border-radius:30px;border:1.5px solid var(--line);background:#fff;font:inherit;font-size:17px;color:var(--ink)}
-.chip.on{background:var(--g);border-color:var(--g);color:#fff}
-.fixed{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--line);padding:6px 0 12px;font-size:22px}
-.fixed small{color:var(--g);font-size:14px}
-input.num{width:100%;border:0;border-bottom:1.5px solid var(--line);font:inherit;font-size:44px;font-weight:700;padding:4px 0 10px;background:transparent;outline:none;border-radius:0}
-.box{background:var(--soft);border-radius:20px;padding:16px 18px;margin-top:22px}
-.box .k{color:var(--mute);font-size:14px}.box .v{color:var(--g);font-size:32px;font-weight:700}
-.btn{width:100%;margin-top:24px;border:0;border-radius:40px;background:var(--g);color:#fff;font:inherit;font-weight:700;font-size:20px;padding:17px}
-.btn:disabled{opacity:.5}
-.err{color:#b3261e;font-size:15px;margin-top:12px;min-height:20px}
-.note{color:var(--mute);font-size:14px;margin-top:10px}
-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:12px 0 16px}
-nav a{color:var(--mute);text-decoration:none;font-size:16px;padding:6px 18px}nav a.on{color:var(--g);font-weight:700}
-.tabs{display:flex;gap:8px;margin-bottom:14px}
-table{width:100%;border-collapse:collapse;font-size:15px}
-th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);text-align:left;padding:6px 3px;border-bottom:2px solid var(--ink)}
-td{padding:11px 3px;border-bottom:1px solid var(--line)}td.h{color:var(--g);font-weight:700}
-.tc{border:1.5px solid var(--line);border-radius:20px;padding:16px;margin-top:12px}
-.tc b{font-size:19px}.tc .row{display:flex;gap:18px;margin-top:10px}.tc .row div{flex:1}
-.tc .row span{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
-.tc .row em{font-style:normal;font-size:26px;font-weight:700}
-.bar{height:10px;border:1px solid #bbb;border-radius:5px;margin-top:12px}.bar i{display:block;height:100%;background:var(--g);border-radius:4px}
-#toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--g);color:#fff;padding:10px 20px;border-radius:30px;display:none;z-index:9}
-a.lo{color:var(--mute);font-size:14px}
-.opt{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:14px 0;cursor:pointer}.opt .r{width:18px;height:18px;border:1.5px solid var(--line);border-radius:50%;margin-right:12px;flex:none}.opt .l{display:flex;align-items:center}.opt .n{color:var(--mute);font-variant-numeric:tabular-nums}.opt.on{border-bottom:2px solid var(--g)}.opt.on b{color:var(--g)}.opt.on .n{color:var(--g)}.opt.on .r{border-color:var(--g);background:radial-gradient(var(--g) 45%,#fff 50%)}.opt.dim{opacity:.45;cursor:default}
+*{box-sizing:border-box;margin:0}
+:root{--bg:#f5f6f8;--ink:#101828;--mute:#667085;--line:#eaecf0;--a:#0e9f83;--a2:#e7f6f2;--amb:#b54708;--amb2:#fffaeb;--red:#b3261e}
+body{background:var(--bg);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:16px}
+.w{max-width:460px;margin:0 auto;padding:14px 18px 170px}
+.top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 16px}
+.who{display:flex;align-items:center;gap:10px}.av{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:600}
+.who small{display:block;color:var(--mute);font-size:12px}.who b{font-size:15px}
+.chipd{background:#fff;border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:12.5px;color:var(--mute);font-weight:500}
+h1{font-size:30px;letter-spacing:-.02em;font-weight:700;margin-bottom:16px}
+.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 0 0 1px var(--line)}
+.lab{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.ord{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.ord b{font-size:17px}.ord small{display:block;color:var(--mute);font-size:13px;margin-top:3px}
+.pill{background:var(--a2);color:var(--a);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.bar{height:6px;background:#eef0f3;border-radius:3px;margin:14px 0 6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--a);border-radius:3px}
+.bl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mute)}
+.need{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px;color:var(--mute)}.need b{color:var(--ink);font-size:14px}
+.oc{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+.oc button{flex:none;padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:#fff;font:inherit;font-size:13.5px;font-weight:600;color:var(--mute)}.oc button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tile{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);margin-bottom:8px;background:#fff;cursor:pointer}
+.tile:last-child{margin-bottom:0}
+.tile .r{width:20px;height:20px;border-radius:50%;border:2px solid #d0d5dd;flex:none}
+.tile .t{flex:1}.tile .t b{font-size:15px;display:block}.tile .t small{color:var(--mute);font-size:12px}
+.tile .n{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.tile.on{border-color:var(--a);background:var(--a2)}.tile.on .r{border-color:var(--a);background:radial-gradient(var(--a) 42%,transparent 46%)}
+.tile.dim{opacity:.5;background:#f9fafb;cursor:default}
+.warn{background:var(--amb2);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--amb);line-height:1.4;margin-bottom:12px}
+.qty{text-align:center}.qty .lab{text-align:left}
+input.num{width:100%;border:0;text-align:center;font:inherit;font-size:56px;font-weight:700;letter-spacing:-.03em;background:transparent;outline:none;color:var(--ink);padding:4px 0}
+input.num::placeholder{color:#d0d5dd}
+.qs{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}.qs button{border:1px solid var(--line);border-radius:12px;padding:9px 14px;font:inherit;font-weight:600;font-size:14px;background:#fff;color:var(--ink)}
+.info{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;color:var(--mute);margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.info b{color:var(--ink);font-size:16px}
+.hold{background:var(--a2);border-radius:20px;padding:14px 16px;margin-bottom:12px}.hold .bl{color:#0b6e5a}.hold .bl+.bl{margin-top:4px}.hold b{font-size:26px;color:var(--a)}
+.sticky{position:fixed;left:0;right:0;bottom:70px;padding:14px 18px 10px;background:linear-gradient(180deg,rgba(245,246,248,0),var(--bg) 40%)}
+.sticky>div{max-width:460px;margin:0 auto}
+.btn{width:100%;border:0;border-radius:16px;background:var(--a);color:#fff;font:inherit;font-weight:600;font-size:17px;padding:17px}.btn:disabled{opacity:.5}.btn.dk{background:var(--ink)}
+.err{color:var(--red);font-size:14px;text-align:center;min-height:18px;margin-bottom:6px}
+.note{color:var(--mute);font-size:13px;margin:8px 0}
+nav{position:fixed;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding-top:9px}
+nav a{text-align:center;font-size:11.5px;color:#98a2b3;font-weight:500;text-decoration:none;width:33%}nav a.on{color:var(--a);font-weight:700}nav svg{display:block;margin:0 auto 4px}
+.seg{display:flex;background:#eceef2;border-radius:12px;padding:3px;margin-bottom:14px}.seg button{flex:1;border:0;background:none;font:inherit;text-align:center;padding:8px;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--mute)}.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(16,24,40,.1)}
+.kp{display:flex;gap:10px;margin-bottom:12px}.kp .card{flex:1;margin:0;padding:14px}.kp b{font-size:24px;display:block;letter-spacing:-.02em}.kp small{color:var(--mute);font-size:12px}.kp .a b{color:var(--a)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}th{font-size:11px;color:var(--mute);font-weight:600;text-align:right;padding:0 0 8px;text-transform:uppercase;letter-spacing:.05em}th:first-child,td:first-child{text-align:left}td{text-align:right;padding:11px 0;border-top:1px solid var(--line)}td:first-child{font-weight:600}td.g{color:var(--a);font-weight:700}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.row:first-of-type{border-top:0}.row b{font-size:14.5px}.row small{display:block;color:var(--mute);font-size:12px;margin-top:2px}.row span{font-weight:700}
+#toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:30px;display:none;z-index:9;font-size:14px}
+a.lo{color:var(--mute);font-size:12px;text-decoration:none}
 </style></head><body><div class="w">
 <div id="toast"></div>
-<div style="display:flex;justify-content:space-between;align-items:center"><span class="sub" style="margin:0" id="who"></span><a class="lo" href="#" id="lo">Log out</a></div>
+<div class="top"><div class="who"><div class="av" id="av"></div><div><small id="hi">Hello</small><b id="who"></b></div></div><div style="text-align:right"><div class="chipd" id="dt"></div><a class="lo" href="#" id="lo">Log out</a></div></div>
 <div id="main"></div>
 </div>
-<nav><a href="#made" id="n_made">Made</a><a href="#give" id="n_give">Give</a><a href="#report" id="n_report">Report</a></nav>
+<div id="bar"></div>
+<nav><a href="#made" id="n_made"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="9"/><path d="M11 6v10M6 11h10"/></svg>Made</a><a href="#give" id="n_give"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11h14M13 6l5 5-5 5"/></svg>Give</a><a href="#report" id="n_report"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18V9M11 18V4M18 18v-6"/></svg>Report</a></nav>
 <script>
 const ME=localStorage.getItem('wa_name'),TOKEN=localStorage.getItem('wa_token');
 if(!TOKEN||!['Suman','Dinesh','Ajeet','Siraj','Sunil'].includes(ME)){location.href='index.html'}
@@ -55,36 +68,42 @@ async function api(url,opt){opt=opt||{};opt.headers=Object.assign({},opt.headers
  const r=await fetch(url,opt);if(r.status===401){localStorage.removeItem('wa_token');location.href='index.html';return}
  const j=await r.json();if(!r.ok)throw new Error(j.error||'error');return j}
 $('lo').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');location.href='index.html'};
+$('av').textContent=(ME||'?')[0];$('who').textContent=ME;
 let H=null,sel={stype:null,issue:null},rtab='date';
 async function home(){H=await api('/api/c?view=home');
+ $('dt').textContent=dm(H.today);
  if(!sel.stype||!H.types.includes(sel.stype))sel.stype=H.types[0]||null;
  if(!H.issues.find(x=>x.id===sel.issue))sel.issue=H.issues.length?H.issues[0].id:null}
-function chips(list,cur,fn,lab){return '<div class="chips">'+list.map(x=>'<button class="chip'+(x[0]===cur?' on':'')+'" data-v="'+esc(x[0])+'">'+esc(x[1])+'</button>').join('')+'</div>'}
-function pick(root,fn){root.querySelectorAll('.chip').forEach(b=>b.onclick=()=>fn(b.dataset.v))}
+function setBar(html){$('bar').innerHTML=html?'<div class="sticky"><div><div class="err" id="err"></div>'+html+'</div></div>':''}
+function orderCard(od){
+ if(!od)return '<div class="card"><div class="lab">Order</div><div class="ord"><div><b>No open order</b><small>Ask Jatin to issue an order</small></div></div></div>';
+ const pc=od.qty?Math.min(100,Math.round(100*od.wound/od.qty)):0;
+ return '<div class="card"><div class="lab">Order</div><div class="ord"><div><b>#'+esc(od.order_no)+'</b><small>'+esc(od.winding_type)+'</small></div><span class="pill">'+fmt(od.left)+' left</span></div><div class="bar"><i style="width:'+pc+'%"></i></div><div class="bl"><span>'+fmt(od.wound)+' wound</span><span>'+fmt(od.qty)+'</span></div>'+(od.stator_type?'<div class="need"><span>Order stamping</span><b>'+esc(od.stator_type)+'</b></div>':'')+'</div>'}
 function entryForm(kind){
  const give=kind==='give';
- let h='<div class="card"><h1>'+(give?'Give to '+esc(NEXT):'Made today')+'</h1><div class="sub">'+esc(ME)+' | '+dm(H.today)+'</div>';
  const od=H.issues.find(x=>x.id===sel.issue)||H.issues[0]||null;
- h+='<div class="lab">Order</div>';
- if(H.issues.length>1)h+='<div id="is">'+chips(H.issues.map(i=>[String(i.id),'#'+i.order_no+' | '+i.winding_type]),String(sel.issue))+'</div>';
- else if(H.issues.length===1)h+='<div class="fixed"><span>'+esc(H.issues[0].winding_type)+'</span><small>order #'+esc(H.issues[0].order_no)+'</small></div>';
- else h+='<div class="fixed"><span>-</span><small>no open order</small></div>';
- if(od&&od.stator_type)h+='<div class="note" style="margin:8px 0 0">Order stamping: <b>'+esc(od.stator_type)+'</b></div>';
+ let h='<h1>'+(give?'Give to '+esc(NEXT):'Made today')+'</h1>';
+ if(H.issues.length>1)h+='<div class="oc" id="is">'+H.issues.map(i=>'<button data-v="'+i.id+'" class="'+(i.id===sel.issue?'on':'')+'">#'+esc(i.order_no)+' | '+esc(i.winding_type)+'</button>').join('')+'</div>';
+ h+=orderCard(od);
  const bal=t=>give?((H.holds[t]||{held:0}).held):((H.stamp[t]||{bal:0}).bal);
  const names=Array.from(new Set(Object.keys(H.stamp||{}).concat(give?Object.keys(H.holds||{}):[]).concat(od&&od.stator_type?[od.stator_type]:[])));
  const opts=names.map(t=>[t,bal(t)]).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0]));
  if(!sel.stype||bal(sel.stype)<=0){const okk=od&&od.stator_type&&bal(od.stator_type)>0?od.stator_type:(opts.find(o=>o[1]>0)||[null])[0];sel.stype=okk}
- h+='<div class="lab">'+(give?'Stamping (stators you hold)':'Stamping used (what you hold from Midland)')+'</div>';
- h+=opts.length?'<div id="st">'+opts.map(o=>'<div class="opt'+(o[0]===sel.stype?' on':'')+(o[1]<=0?' dim':'')+'" data-v="'+esc(o[0])+'"><div class="l"><span class="r"></span><b>'+esc(o[0])+'</b></div><span class="n">'+(o[1]>0?fmt(o[1])+' left':'0 - none with you')+'</span></div>').join('')+'</div>':'<div class="note">No stamping with you yet. Ask Jatin.</div>';
- if(!give&&od&&od.stator_type&&sel.stype&&sel.stype!==od.stator_type)h+='<div class="note"><b style="color:var(--g)">Different from order:</b> using '+esc(sel.stype)+' for an order of '+esc(od.stator_type)+'. This is saved with the entry so Jatin can see it.</div>';
- h+='<div class="lab">'+(give?'Stators given':'Stators made')+'</div><input class="num" id="q" type="number" inputmode="numeric" min="1" placeholder="0">';
- if(give){const x=H.holds[sel.stype]||{held:0};h+='<div class="box"><div class="k">You hold</div><div class="v" id="hv">'+fmt(x.held)+'</div><div class="k" id="hk">enter a number to see balance after giving</div></div><div class="note">Cannot give more than you hold.</div>'}
- else h+='<div class="box"><div class="k">Made today so far (auto)</div><div class="v">'+fmt(H.madeToday)+'</div></div>'+(H.issues.length===1||sel.issue?'<div class="note">'+(()=>{const i=H.issues.find(x=>x.id===sel.issue);return i?'Order #'+esc(i.order_no)+': '+fmt(i.left)+' left to wind':''})()+'</div>':'');
- h+='<button class="btn" id="go">'+(give?'Give':'Save')+'</button><div class="err" id="err"></div></div>';
+ h+='<div class="card"><div class="lab">'+(give?'Stators you hold, by stamping':'Stamping used')+'</div>';
+ h+=opts.length?'<div id="st">'+opts.map(o=>'<div class="tile'+(o[0]===sel.stype?' on':'')+(o[1]<=0?' dim':'')+'" data-v="'+esc(o[0])+'"><span class="r"></span><div class="t"><b>'+esc(o[0])+'</b><small>'+(o[1]>0?(give?'ready to give':'from Midland'):'none with you')+'</small></div><span class="n">'+fmt(Math.max(0,o[1]))+'</span></div>').join('')+'</div>':'<div class="note">No stamping with you yet. Ask Jatin.</div>';
+ h+='</div>';
+ if(!give&&od&&od.stator_type&&sel.stype&&sel.stype!==od.stator_type)h+='<div class="warn"><b>Different from order.</b> Using '+esc(sel.stype)+' for an order of '+esc(od.stator_type)+'. This is saved with the entry so Jatin can see it.</div>';
+ const hold=(H.holds[sel.stype]||{held:0}).held,mx=give?hold:((H.stamp[sel.stype]||{bal:0}).bal);
+ h+='<div class="card qty"><div class="lab">'+(give?'Stators given':'Stators made')+'</div><input class="num" id="q" type="number" inputmode="numeric" min="1" placeholder="0"><div class="qs">'+
+  (give?'<button data-a="100">+100</button><button data-a="500">+500</button><button data-all="'+Math.max(0,hold)+'">All '+fmt(Math.max(0,hold))+'</button>':'<button data-a="100">+100</button><button data-a="500">+500</button><button data-a="1000">+1,000</button>')+'</div>'+
+  (give?'<div class="info"><span>You hold</span><b id="hv">'+fmt(hold)+'</b></div><div class="info" style="border:0;margin:0;padding-top:4px"><span id="hk">After giving</span><b id="ha">'+fmt(hold)+'</b></div>':'<div class="info"><span>Made today so far</span><b>'+fmt(H.madeToday)+'</b></div>')+'</div>';
  $('main').innerHTML=h;
- if($('st'))$('st').querySelectorAll('.opt:not(.dim)').forEach(b=>b.onclick=()=>{sel.stype=b.dataset.v;entryForm(kind)});
- if($('is'))pick($('is'),v=>{sel.issue=+v;entryForm(kind)});
- if(give)$('q').oninput=()=>{const x=H.holds[sel.stype]||{held:0},q=+$('q').value||0;$('hk').textContent=q?('after giving: '+fmt(x.held-q)):'enter a number to see balance after giving';$('hk').style.color=(x.held-q<0)?'#b3261e':''};
+ setBar('<button class="btn'+(give?' dk':'')+'" id="go">'+(give?'Give':'Save')+'</button>');
+ if($('st'))$('st').querySelectorAll('.tile:not(.dim)').forEach(b=>b.onclick=()=>{sel.stype=b.dataset.v;entryForm(kind)});
+ if($('is'))$('is').querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.issue=+b.dataset.v;entryForm(kind)});
+ const upd=()=>{if(give){const q=+$('q').value||0;$('ha').textContent=fmt(hold-q);$('ha').style.color=(hold-q<0)?'#b3261e':''}};
+ $('q').oninput=upd;
+ document.querySelectorAll('.qs button').forEach(b=>b.onclick=()=>{const cur=+$('q').value||0;$('q').value=b.dataset.all!==undefined?+b.dataset.all:cur+(+b.dataset.a);upd()});
  $('go').onclick=async()=>{const q=+$('q').value;$('err').textContent='';
   if(!sel.stype){$('err').textContent='Choose the stamping type';return}
   if(!(q>0)||q!==Math.floor(q)){$('err').textContent='Enter a whole number above 0';return}
@@ -94,35 +113,35 @@ function entryForm(kind){
    toast('Saved');await home();entryForm(kind)}catch(e){$('err').textContent=e.message;$('go').disabled=false}}
 }
 async function report(){
+ setBar('');
  const R=await api('/api/c?view=report');
- let h='<div class="card"><h1>My report</h1><div class="sub">'+esc(ME)+' | only my data</div><div class="tabs">'+
-  [['date','Date-wise'],['type','By type'],['order','By order']].map(t=>'<button class="chip'+(rtab===t[0]?' on':'')+'" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+ $('dt').textContent=dm(R.to);
+ let h='<div class="seg">'+[['date','Date'],['type','Type'],['order','Order']].map(t=>'<button class="'+(rtab===t[0]?'on':'')+'" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
  if(rtab==='date'){
-  {const ks=Object.keys(R.stamp||{}).sort();if(ks.length){h+='<div class="lab">Stamping with me</div><table><tr><th>Type</th><th>Received</th><th>Made</th><th>Left</th></tr>'+ks.map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(R.stamp[k].recv)+'</td><td>'+fmt(R.stamp[k].made)+'</td><td class="h">'+fmt(R.stamp[k].bal)+'</td></tr>').join('')+'</table>'}}
-  h+='<div class="note" style="margin:0 0 8px">'+dm(R.from)+' - '+dm(R.to)+'</div>';
+  const m=R.rows.reduce((a,r)=>a+r.made,0),g=R.rows.reduce((a,r)=>a+r.given,0),held=Object.values(R.holds||{}).reduce((a,x)=>a+x.held,0);
+  h+='<div class="kp"><div class="card a"><small>Made</small><b>'+fmt(m)+'</b></div><div class="card"><small>Given</small><b>'+fmt(g)+'</b></div><div class="card a"><small>Held now</small><b>'+fmt(held)+'</b></div></div>';
+  const ks=Object.keys(R.stamp||{}).sort();
+  if(ks.length)h+='<div class="card"><div class="lab">Stamping with me</div><table><tr><th>Type</th><th>Received</th><th>Made</th><th>Left</th></tr>'+ks.map(k=>'<tr><td>'+esc(k)+'</td><td>'+fmt(R.stamp[k].recv)+'</td><td>'+fmt(R.stamp[k].made)+'</td><td class="g">'+fmt(R.stamp[k].bal)+'</td></tr>').join('')+'</table></div>';
+  h+='<div class="card"><div class="lab">Entries | '+dm(R.from)+' - '+dm(R.to)+'</div>';
   if(!R.rows.length)h+='<div class="note">No entries yet.</div>';
-  else{h+='<table><tr><th>Date</th><th>Stamp</th><th>Wind</th><th>Made</th><th>Given</th><th>Held</th></tr>';
-   R.rows.slice().reverse().forEach(r=>h+='<tr><td>'+dm(r.d)+'</td><td>'+esc(r.stype)+'</td><td>'+esc(r.wt)+'</td><td>'+fmt(r.made)+'</td><td>'+fmt(r.given)+'</td><td class="h">'+fmt(r.held)+'</td></tr>');
-   h+='</table>';
-   const m=R.rows.reduce((a,r)=>a+r.made,0),g=R.rows.reduce((a,r)=>a+r.given,0),held=Object.values(R.holds).reduce((a,x)=>a+x.held,0);
-   h+='<div class="box"><div class="k">Total made</div><b>'+fmt(m)+'</b> <span class="k">| given </span><b>'+fmt(g)+'</b><div class="k" style="margin-top:8px">Held now</div><div class="v">'+fmt(held)+'</div></div>'}
+  else R.rows.slice().reverse().forEach(r=>h+='<div class="row"><div><b>'+dm(r.d)+' | '+esc(r.stype)+'</b><small>'+esc(r.wt)+' | made '+fmt(r.made)+' | given '+fmt(r.given)+'</small></div><span style="color:var(--a)">'+fmt(r.held)+' held</span></div>');
+  h+='</div>';
  } else if(rtab==='type'){
   const o={};R.rows.forEach(r=>{const k=r.stype+'|'+r.wt;const x=o[k]||(o[k]={s:r.stype,w:r.wt,m:0,g:0});x.m+=r.made;x.g+=r.given});
   const L=Object.values(o);
-  if(!L.length)h+='<div class="note">No entries yet.</div>';
-  L.forEach(x=>h+='<div class="tc"><b>'+esc(x.s)+' | '+esc(x.w)+'</b><div class="row"><div><span>Made</span><em>'+fmt(x.m)+'</em></div><div><span>Given</span><em>'+fmt(x.g)+'</em></div><div><span>Held</span><em style="color:var(--g)">'+fmt(x.m-x.g)+'</em></div></div><div class="bar"><i style="width:'+(x.m?Math.min(100,Math.round(100*x.g/x.m)):0)+'%"></i></div></div>');
+  if(!L.length)h+='<div class="card"><div class="note">No entries yet.</div></div>';
+  L.forEach(x=>h+='<div class="card"><div class="ord"><div><b>'+esc(x.s)+'</b><small>'+esc(x.w)+'</small></div><span class="pill">'+fmt(x.m-x.g)+' held</span></div><div class="bar"><i style="width:'+(x.m?Math.min(100,Math.round(100*x.g/x.m)):0)+'%"></i></div><div class="bl"><span>made '+fmt(x.m)+'</span><span>given '+fmt(x.g)+'</span></div></div>');
   h+='<div class="note">Bar = given / made</div>';
  } else {
-  if(!R.orders.length)h+='<div class="note">No orders issued yet.</div>';
-  R.orders.forEach(o=>h+='<div class="tc"><b>Order #'+esc(o.order_no)+' | '+esc(o.stator_type||'')+' | '+esc(o.winding_type)+'</b><div class="row"><div><span>Qty</span><em>'+fmt(o.qty)+'</em></div><div><span>Wound</span><em>'+fmt(o.wound)+'</em></div><div><span>Given</span><em>'+fmt(o.given)+'</em></div></div><div class="note">Left '+fmt(Math.max(0,o.qty-o.wound))+(o.due?' | Due '+dm(o.due):'')+'</div><div class="bar"><i style="width:'+Math.min(100,Math.round(100*o.wound/o.qty))+'%"></i></div></div>');
+  if(!R.orders.length)h+='<div class="card"><div class="note">No orders issued yet.</div></div>';
+  R.orders.forEach(o=>h+='<div class="card"><div class="ord"><div><b>Order #'+esc(o.order_no)+'</b><small>'+esc(o.stator_type||'')+' | '+esc(o.winding_type)+(o.due?' | due '+dm(o.due):'')+'</small></div><span class="pill">'+fmt(Math.max(0,o.qty-o.wound))+' left</span></div><div class="bar"><i style="width:'+Math.min(100,Math.round(100*o.wound/o.qty))+'%"></i></div><div class="bl"><span>wound '+fmt(o.wound)+' | given '+fmt(o.given)+'</span><span>'+fmt(o.qty)+'</span></div></div>');
  }
- h+='</div>';$('main').innerHTML=h;
- pick($('main'),v=>{rtab=v;report()});
+ $('main').innerHTML=h;
+ $('main').querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{rtab=b.dataset.v;report()});
 }
 async function route(){
  const p=(location.hash||'#made').slice(1);
  ['made','give','report'].forEach(k=>$('n_'+k).className=k===p?'on':'');
- $('who').textContent=ME;
  try{if(p==='report')await report();else{await home();entryForm(p==='give'?'give':'made')}}
  catch(e){$('main').innerHTML='<div class="card"><div class="err">'+esc(e.message)+'</div></div>'}
 }
