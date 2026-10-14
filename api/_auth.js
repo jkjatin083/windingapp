@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-export const NAMES = ['Suman', 'Dinesh', 'Ajeet', 'Siraj', 'Sunil', 'Pandey ji'];
+export const NAMES = ['Suman', 'Dinesh', 'Ajeet', 'Siraj', 'Sunil', 'Pandey ji', 'Sandeep'];
 
 function key() {
   return crypto.createHash('sha256').update('wa-auth:' + (process.env.DATABASE_URL || '')).digest();
