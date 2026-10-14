@@ -1,3 +1,5 @@
+import { neon } from '@neondatabase/serverless';
+import { verify } from './_auth.js';
 // Admin Order Book: orders (from sale app), progress (contractor entries), Midland stamping + rotor.
 const START = '2026-10-01';
 const CONTRACTORS = ['Suman', 'Dinesh', 'Ajeet', 'Siraj', 'Sunil'];
