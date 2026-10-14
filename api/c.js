@@ -25,6 +25,27 @@ async function holds(sql, me) {
   return o;
 }
 
+// Stamping with this contractor, per type: received (Midland OUTWARD to this contractor + manual receipts + transfers) minus stators made
+async function stampStock(sql, me) {
+  const o = {};
+  const g = t => o[t] || (o[t] = { recv: 0, made: 0, bal: 0 });
+  try {
+    const m = await sql`SELECT t.party_name, t.quantity::float AS q, i.name AS item FROM inventory_transactions t JOIN inventory_items i ON i.id = t.item_id
+      WHERE upper(t.transaction_type) = 'OUTWARD' AND i.category IN ('STAMPING', 'AIRY STAMPING') AND t.transaction_date >= ${START}::date`;
+    m.forEach(x => { if (normParty(x.party_name) === me) g(x.item).recv += x.q; });
+  } catch (e) { /* Midland not readable */ }
+  const w = await sql`SELECT kind, contractor, party, stype, qty::float AS q FROM wa_entries
+    WHERE deleted = false AND d >= ${START}::date AND stype IS NOT NULL
+      AND ((contractor = ${me} AND kind IN ('stamp_in','wound','transfer')) OR (party = ${me} AND kind = 'transfer'))`;
+  w.forEach(x => {
+    if (x.kind === 'stamp_in') g(x.stype).recv += x.q;
+    else if (x.kind === 'wound') g(x.stype).made += x.q;
+    else if (x.kind === 'transfer') { if (x.party === me) g(x.stype).recv += x.q; else g(x.stype).recv -= x.q; }
+  });
+  Object.values(o).forEach(x => { x.bal = x.recv - x.made; });
+  return o;
+}
+
 async function openIssues(sql, me) {
   let rows = [];
   try {
@@ -64,7 +85,7 @@ export default async function handler(req, res) {
       if (view === 'home') {
         const iss = await openIssues(sql, me);
         const t = await sql`SELECT COALESCE(SUM(qty),0)::float AS v FROM wa_entries WHERE deleted = false AND contractor = ${me} AND kind = 'wound' AND d = ${today}::date`;
-        return res.status(200).json({ me, today, types: await stampTypes(sql, me), holds: await holds(sql, me), issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v });
+        return res.status(200).json({ me, today, types: await stampTypes(sql, me), holds: await holds(sql, me), stamp: await stampStock(sql, me).catch(() => ({})), issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v });
       }
       if (view === 'report') {
         const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from || '') ? req.query.from : START;
@@ -100,7 +121,7 @@ export default async function handler(req, res) {
               COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind='sent'),0)::float AS given
             FROM ca_issues i JOIN ca_orders o ON o.id = i.order_id WHERE i.contractor = ${me} ORDER BY i.id DESC`;
         } catch (e) { /* tables not created yet */ }
-        return res.status(200).json({ from, to, rows: out, orders, holds: await holds(sql, me), open: iss.rows.length });
+        return res.status(200).json({ from, to, rows: out, orders, holds: await holds(sql, me), stamp: await stampStock(sql, me).catch(() => ({})), open: iss.rows.length });
       }
       return res.status(400).json({ error: 'Invalid view' });
     }
