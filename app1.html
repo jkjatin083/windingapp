@@ -1,156 +1,120 @@
 <!doctype html>
-<html lang="hi"><head><meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>App 1 - Winding</title>
+<title>Contractor</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#fffdf6;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#222;font-size:16px}
-.w{max-width:460px;margin:0 auto;padding:14px}
-h1{font-size:26px;margin:4px 0}h2{font-size:21px;margin:0 0 8px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.top a{color:#555;font-size:16px}
-.box{border:1.5px solid #cfc9b8;border-radius:10px;padding:12px 14px;margin:12px 0;background:#e6f2ff}
-.box.g{background:#e8f7e4}.box.y{background:#fff3cc}.box.p{background:#fde7ef}
-table{width:100%;border-collapse:collapse;font-size:17px}
-th,td{padding:5px 3px;border-bottom:1.5px dashed #888;text-align:right}
-th:first-child,td:first-child{text-align:left}
-th{font-weight:normal;color:#444}
-tr.tot td{border-top:2.5px solid #333;border-bottom:none;font-weight:bold}
-input,select{font:inherit;font-size:19px;width:100%;padding:8px;margin:4px 0 8px;border:1px solid #b5b09f;border-radius:8px;background:#fff}
-button{font:inherit;font-size:20px;padding:10px 16px;border:1.5px solid #cfc9b8;border-radius:10px;background:#fff3cc;cursor:pointer}
-button.w100{width:100%}
-.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.tabs button{flex:1 1 40%;background:#fff}.tabs button.on{background:#ffe08a}
-.big{font-size:30px;font-weight:bold}.bad{color:#c0392b;font-weight:bold}.ok{color:#1e8449}
-.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
-.del{padding:0 8px;font-size:16px;background:#fff;border-width:1.5px}
-.err{color:#c0392b}
-small,.mut{color:#666;font-size:16px}
-#msg{position:sticky;top:0;background:#fff3cc;padding:6px;text-align:center;display:none;border:1px solid #b5b09f}
+:root{--g:#1f6f4a;--ink:#1a1a1a;--mute:#8a8a85;--line:#dcdcd6;--soft:#f3f7f4}
+body{margin:0;background:#f3f2ee;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:17px}
+.w{max-width:460px;margin:0 auto;padding:18px 18px 96px}
+.card{background:#fff;border:1px solid var(--line);border-radius:28px;padding:26px 22px;margin-top:10px}
+h1{font-size:30px;margin:0}.sub{color:var(--mute);font-size:15px;margin:6px 0 22px}
+.lab{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:20px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:11px 18px;border-radius:30px;border:1.5px solid var(--line);background:#fff;font:inherit;font-size:17px;color:var(--ink)}
+.chip.on{background:var(--g);border-color:var(--g);color:#fff}
+.fixed{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--line);padding:6px 0 12px;font-size:22px}
+.fixed small{color:var(--g);font-size:14px}
+input.num{width:100%;border:0;border-bottom:1.5px solid var(--line);font:inherit;font-size:44px;font-weight:700;padding:4px 0 10px;background:transparent;outline:none;border-radius:0}
+.box{background:var(--soft);border-radius:20px;padding:16px 18px;margin-top:22px}
+.box .k{color:var(--mute);font-size:14px}.box .v{color:var(--g);font-size:32px;font-weight:700}
+.btn{width:100%;margin-top:24px;border:0;border-radius:40px;background:var(--g);color:#fff;font:inherit;font-weight:700;font-size:20px;padding:17px}
+.btn:disabled{opacity:.5}
+.err{color:#b3261e;font-size:15px;margin-top:12px;min-height:20px}
+.note{color:var(--mute);font-size:14px;margin-top:10px}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:12px 0 16px}
+nav a{color:var(--mute);text-decoration:none;font-size:16px;padding:6px 18px}nav a.on{color:var(--g);font-weight:700}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);text-align:left;padding:6px 3px;border-bottom:2px solid var(--ink)}
+td{padding:11px 3px;border-bottom:1px solid var(--line)}td.h{color:var(--g);font-weight:700}
+.tc{border:1.5px solid var(--line);border-radius:20px;padding:16px;margin-top:12px}
+.tc b{font-size:19px}.tc .row{display:flex;gap:18px;margin-top:10px}.tc .row div{flex:1}
+.tc .row span{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.tc .row em{font-style:normal;font-size:26px;font-weight:700}
+.bar{height:10px;border:1px solid #bbb;border-radius:5px;margin-top:12px}.bar i{display:block;height:100%;background:var(--g);border-radius:4px}
+#toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--g);color:#fff;padding:10px 20px;border-radius:30px;display:none;z-index:9}
+a.lo{color:var(--mute);font-size:14px}
 </style></head><body><div class="w">
-<div id="msg"></div>
-<div class="top"><h1 id="hd">App 1</h1><a href="#" id="lo">Log out</a></div>
-<div id="sum"></div>
-<div class="box y">
- <h2>New entry</h2>
- <div class="tabs" id="tabs"></div>
- <div id="form"></div>
+<div id="toast"></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><span class="sub" style="margin:0" id="who"></span><a class="lo" href="#" id="lo">Log out</a></div>
+<div id="main"></div>
 </div>
-<div class="box"><h2>Entries by date</h2><div id="list"></div></div>
-<datalist id="types"></datalist>
+<nav><a href="#made" id="n_made">Made</a><a href="#give" id="n_give">Give</a><a href="#report" id="n_report">Report</a></nav>
 <script>
-const START='2026-10-01';
-const ME=localStorage.getItem('wa_name');
-const TOKEN=localStorage.getItem('wa_token');
-if(!TOKEN){location.href='index.html';}
-const IS_ADM=(()=>{try{return JSON.parse(atob(TOKEN.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))).a===1}catch(e){return false}})();
-const todayIST=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date());
-const canEdit=r=>IS_ADM||r.d===todayIST();
-function editEntry(id){
- const r=rows.find(x=>x.id===id);if(!r||!canEdit(r))return;
- const fixed=r.kind==='made'||r.kind==='mdispatch';
- const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9;display:flex;align-items:center;justify-content:center;padding:14px';
- o.innerHTML='<div style="background:#fffdf6;border-radius:12px;padding:16px;width:100%;max-width:420px"><h2 style="margin:0 0 8px">Edit entry</h2>'+
-  (fixed?'<div class="mut">'+esc((r.party||'')+' - '+(r.stype||''))+'</div>':'<label>Type</label><input id="e_t" value="'+esc(r.stype||'')+'">')+
-  '<label>Quantity</label><input id="e_q" type="number" inputmode="numeric" value="'+r.qty+'"><label>Date</label><input id="e_d" type="date" min="2026-10-01" value="'+r.d+'">'+
-  (r.kind==='made'?'<label>Motors with kuppa</label><input id="e_k" type="number" inputmode="numeric" value="'+(r.kuppa||0)+'">':'')+
-  '<label>Note (optional)</label><input id="e_n" maxlength="100" value="'+esc(r.note||'')+'"><div class="err" id="e_err"></div>'+
-  '<div class="row" style="margin-top:10px"><button id="e_c">Cancel</button><button id="e_s">Save changes</button></div></div>';
- document.body.appendChild(o);
- const g=i=>document.getElementById(i);
- g('e_c').onclick=()=>o.remove();
- g('e_s').onclick=async()=>{
-  const body={action:'edit',id,qty:Number(g('e_q').value),d:g('e_d').value,note:g('e_n').value};
-  if(g('e_t'))body.stype=g('e_t').value.trim();
-  if(g('e_k'))body.kuppa=Number(g('e_k').value||0);
-  g('e_s').disabled=true;
-  try{const x=await authFetch('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await x.json();if(!x.ok)throw new Error(j.error||'error');o.remove();msg('Saved');await load()}
-  catch(e){g('e_err').textContent=e.message;g('e_s').disabled=false}
- };
-}
-function authFetch(u,o){o=o||{};o.headers=Object.assign({},o.headers||{},{Authorization:'Bearer '+TOKEN});return fetch(u,o).then(r=>{if(r.status===401){localStorage.removeItem('wa_token');location.href='index.html'}return r})}
-if(!ME||!['Suman','Dinesh','Ajeet','Siraj','Sunil'].includes(ME)){location.href='index.html';}
-const OTHERS=['Suman','Dinesh','Ajeet','Siraj','Sunil'].filter(n=>n!==ME);
-const NEXT=ME==='Sunil'?'Sunil':'Pandey ji';
-const TABS=[['stamp_in','Manual receipt (not in Midland)'],['wound','Winding done'],['sent',ME==='Sunil'?'Ready (kept by Sunil)':'Sent to Pandey ji'],['transfer','Transfer']];
-let rows=[],tab='stamp_in';
+const ME=localStorage.getItem('wa_name'),TOKEN=localStorage.getItem('wa_token');
+if(!TOKEN||!['Suman','Dinesh','Ajeet','Siraj','Sunil'].includes(ME)){location.href='index.html'}
+const NEXT=ME==='Sunil'?'Sunil (ready)':'Pandey ji';
+const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=n=>Number(n).toLocaleString('en-IN');
-const today=()=>{const d=new Date();const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);let s=z.toISOString().slice(0,10);return s<START?START:s};
-const dm=d=>d.slice(8,10)+'/'+d.slice(5,7);
-document.getElementById('lo').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');location.href='index.html'};
-function msg(t){const m=document.getElementById('msg');m.textContent=t;m.style.display='block';setTimeout(()=>m.style.display='none',3500)}
-function calc(){
- const t={};const g=k=>t[k]||(t[k]={got:0,rec:0,wound:0,sent:0,out:0});
- rows.forEach(r=>{
-  if(r.kind==='transfer'){
-   if(r.contractor===ME){g(r.stype).out+=r.qty}
-   if(r.party===ME){g(r.stype).got+=r.qty}
-  } else if(r.contractor===ME){
-   const x=g(r.stype);
-   if(r.kind==='stamp_in')x.rec+=r.qty;
-   if(r.kind==='wound')x.wound+=r.qty;
-   if(r.kind==='sent')x.sent+=r.qty;
-  }});
- Object.values(t).forEach(x=>{x.recv=x.rec+x.got-x.out;x.unp=x.recv-x.wound;x.ready=x.wound-x.sent});
- return t;
+const dm=d=>{const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return +d.slice(8,10)+' '+m[+d.slice(5,7)-1]};
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2500)}
+async function api(url,opt){opt=opt||{};opt.headers=Object.assign({},opt.headers||{},{Authorization:'Bearer '+TOKEN});
+ const r=await fetch(url,opt);if(r.status===401){localStorage.removeItem('wa_token');location.href='index.html';return}
+ const j=await r.json();if(!r.ok)throw new Error(j.error||'error');return j}
+$('lo').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');location.href='index.html'};
+let H=null,sel={stype:null,issue:null},rtab='date';
+async function home(){H=await api('/api/c?view=home');
+ if(!sel.stype||!H.types.includes(sel.stype))sel.stype=H.types[0]||null;
+ if(!H.issues.find(x=>x.id===sel.issue))sel.issue=H.issues.length?H.issues[0].id:null}
+function chips(list,cur,fn,lab){return '<div class="chips">'+list.map(x=>'<button class="chip'+(x[0]===cur?' on':'')+'" data-v="'+esc(x[0])+'">'+esc(x[1])+'</button>').join('')+'</div>'}
+function pick(root,fn){root.querySelectorAll('.chip').forEach(b=>b.onclick=()=>fn(b.dataset.v))}
+function entryForm(kind){
+ const give=kind==='give';
+ let h='<div class="card"><h1>'+(give?'Give to '+esc(NEXT):'Made today')+'</h1><div class="sub">'+esc(ME)+' | '+dm(H.today)+'</div>';
+ h+='<div class="lab">Stamping type</div>';
+ h+=H.types.length?'<div id="st">'+chips(H.types.map(t=>[t,t]),sel.stype)+'</div>':'<div class="note">No stamping type yet. Ask Jatin.</div>';
+ h+='<div class="lab">Winding type</div>';
+ if(H.issues.length>1)h+='<div id="is">'+chips(H.issues.map(i=>[String(i.id),i.winding_type+' | #'+i.order_no]),String(sel.issue))+'</div>';
+ else if(H.issues.length===1)h+='<div class="fixed"><span>'+esc(H.issues[0].winding_type)+'</span><small>from order #'+esc(H.issues[0].order_no)+'</small></div>';
+ else h+='<div class="fixed"><span>-</span><small>no open order</small></div>';
+ h+='<div class="lab">'+(give?'Stators given':'Stators made')+'</div><input class="num" id="q" type="number" inputmode="numeric" min="1" placeholder="0">';
+ if(give){const x=H.holds[sel.stype]||{held:0};h+='<div class="box"><div class="k">You hold</div><div class="v" id="hv">'+fmt(x.held)+'</div><div class="k" id="hk">enter a number to see balance after giving</div></div><div class="note">Cannot give more than you hold.</div>'}
+ else h+='<div class="box"><div class="k">Made today so far (auto)</div><div class="v">'+fmt(H.madeToday)+'</div></div>'+(H.issues.length===1||sel.issue?'<div class="note">'+(()=>{const i=H.issues.find(x=>x.id===sel.issue);return i?'Order #'+esc(i.order_no)+': '+fmt(i.left)+' left to wind':''})()+'</div>':'');
+ h+='<button class="btn" id="go">'+(give?'Give':'Save')+'</button><div class="err" id="err"></div></div>';
+ $('main').innerHTML=h;
+ if($('st'))pick($('st'),v=>{sel.stype=v;entryForm(kind)});
+ if($('is'))pick($('is'),v=>{sel.issue=+v;entryForm(kind)});
+ if(give)$('q').oninput=()=>{const x=H.holds[sel.stype]||{held:0},q=+$('q').value||0;$('hk').textContent=q?('after giving: '+fmt(x.held-q)):'enter a number to see balance after giving';$('hk').style.color=(x.held-q<0)?'#b3261e':''};
+ $('go').onclick=async()=>{const q=+$('q').value;$('err').textContent='';
+  if(!sel.stype){$('err').textContent='Choose the stamping type';return}
+  if(!(q>0)||q!==Math.floor(q)){$('err').textContent='Enter a whole number above 0';return}
+  $('go').disabled=true;
+  try{await api('/api/c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:give?'give':'made',stype:sel.stype,qty:q,issue_id:sel.issue})});
+   toast('Saved');await home();entryForm(kind)}catch(e){$('err').textContent=e.message;$('go').disabled=false}}
 }
-function render(){
- document.getElementById('hd').textContent='App 1 - '+ME;
- const t=calc();const keys=Object.keys(t).sort();
- document.getElementById('types').innerHTML=[...new Set(rows.map(r=>r.stype).filter(Boolean))].map(x=>'<option value="'+esc(x)+'">').join('');
- let T={recv:0,wound:0,unp:0,ready:0,sent:0};keys.forEach(k=>{for(const f in T)T[f]+=t[k][f]});
- let h=(note?'<div class="box err">'+esc(note)+'</div>':'')+'<div class="box g"><h2>Summary (from 1 Oct 2026)</h2>';
- if(!keys.length)h+='<div class="mut">No entries yet.</div>';
- else{h+='<table><tr><th>Type</th><th>Received</th><th>Wound</th><th>Stamping balance</th><th>Ready to send</th></tr>';
-  keys.forEach(k=>{const x=t[k];h+='<tr><td>'+esc(k)+'</td><td>'+fmt(x.recv)+'</td><td>'+fmt(x.wound)+'</td><td'+(x.unp<0?' class="bad"':'')+'>'+fmt(x.unp)+'</td><td'+(x.ready<0?' class="bad"':'')+'>'+fmt(x.ready)+'</td></tr>'});
-  h+='<tr class="tot"><td>Total</td><td>'+fmt(T.recv)+'</td><td>'+fmt(T.wound)+'</td><td>'+fmt(T.unp)+'</td><td>'+fmt(T.ready)+'</td></tr></table>';
-  h+='<div class="mut">Stamping balance = received - wound. Ready to send = wound - sent to '+esc(NEXT)+'. Received includes stamping from Midland (automatic) and transfers between contractors.</div>';
-  h+='<div class="mut">'+'Sent to '+esc(NEXT)+' so far: '+fmt(T.sent)+'</div>';}
- h+='</div>';document.getElementById('sum').innerHTML=h;
- renderTabs();renderList();
+async function report(){
+ const R=await api('/api/c?view=report');
+ let h='<div class="card"><h1>My report</h1><div class="sub">'+esc(ME)+' | only my data</div><div class="tabs">'+
+  [['date','Date-wise'],['type','By type'],['order','By order']].map(t=>'<button class="chip'+(rtab===t[0]?' on':'')+'" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+ if(rtab==='date'){
+  h+='<div class="note" style="margin:0 0 8px">'+dm(R.from)+' - '+dm(R.to)+'</div>';
+  if(!R.rows.length)h+='<div class="note">No entries yet.</div>';
+  else{h+='<table><tr><th>Date</th><th>Stamp</th><th>Wind</th><th>Made</th><th>Given</th><th>Held</th></tr>';
+   R.rows.slice().reverse().forEach(r=>h+='<tr><td>'+dm(r.d)+'</td><td>'+esc(r.stype)+'</td><td>'+esc(r.wt)+'</td><td>'+fmt(r.made)+'</td><td>'+fmt(r.given)+'</td><td class="h">'+fmt(r.held)+'</td></tr>');
+   h+='</table>';
+   const m=R.rows.reduce((a,r)=>a+r.made,0),g=R.rows.reduce((a,r)=>a+r.given,0),held=Object.values(R.holds).reduce((a,x)=>a+x.held,0);
+   h+='<div class="box"><div class="k">Total made</div><b>'+fmt(m)+'</b> <span class="k">| given </span><b>'+fmt(g)+'</b><div class="k" style="margin-top:8px">Held now</div><div class="v">'+fmt(held)+'</div></div>'}
+ } else if(rtab==='type'){
+  const o={};R.rows.forEach(r=>{const k=r.stype+'|'+r.wt;const x=o[k]||(o[k]={s:r.stype,w:r.wt,m:0,g:0});x.m+=r.made;x.g+=r.given});
+  const L=Object.values(o);
+  if(!L.length)h+='<div class="note">No entries yet.</div>';
+  L.forEach(x=>h+='<div class="tc"><b>'+esc(x.s)+' | '+esc(x.w)+'</b><div class="row"><div><span>Made</span><em>'+fmt(x.m)+'</em></div><div><span>Given</span><em>'+fmt(x.g)+'</em></div><div><span>Held</span><em style="color:var(--g)">'+fmt(x.m-x.g)+'</em></div></div><div class="bar"><i style="width:'+(x.m?Math.min(100,Math.round(100*x.g/x.m)):0)+'%"></i></div></div>');
+  h+='<div class="note">Bar = given / made</div>';
+ } else {
+  if(!R.orders.length)h+='<div class="note">No orders issued yet.</div>';
+  R.orders.forEach(o=>h+='<div class="tc"><b>Order #'+esc(o.order_no)+' | '+esc(o.stator_type||'')+' | '+esc(o.winding_type)+'</b><div class="row"><div><span>Qty</span><em>'+fmt(o.qty)+'</em></div><div><span>Wound</span><em>'+fmt(o.wound)+'</em></div><div><span>Given</span><em>'+fmt(o.given)+'</em></div></div><div class="note">Left '+fmt(Math.max(0,o.qty-o.wound))+(o.due?' | Due '+dm(o.due):'')+'</div><div class="bar"><i style="width:'+Math.min(100,Math.round(100*o.wound/o.qty))+'%"></i></div></div>');
+ }
+ h+='</div>';$('main').innerHTML=h;
+ pick($('main'),v=>{rtab=v;report()});
 }
-function renderTabs(){
- const tb=document.getElementById('tabs');tb.innerHTML='';
- TABS.forEach(([k,l])=>{const b=document.createElement('button');b.textContent=l;b.className=k===tab?'on':'';b.onclick=()=>{tab=k;renderTabs()};tb.appendChild(b)});
- let f='<label>Stamping type</label><input id="f_type" list="types" placeholder="e.g. 6 SOOT MARUTI" autocomplete="off">';
- if(tab==='transfer')f+='<label>Transfer to</label><select id="f_party">'+OTHERS.map(n=>'<option>'+n+'</option>').join('')+'</select>';
- f+='<div class="row"><div><label>Quantity (pcs)</label><input id="f_qty" type="number" inputmode="numeric" min="1"></div><div><label>Date</label><input id="f_d" type="date" min="'+START+'" value="'+today()+'"></div></div>';
- f+='<label>Note (optional)</label><input id="f_note" maxlength="100">';
- f+='<button class="w100" id="save">Save</button><div class="err" id="ferr"></div>';
- document.getElementById('form').innerHTML=f;
- document.getElementById('save').onclick=save;
+async function route(){
+ const p=(location.hash||'#made').slice(1);
+ ['made','give','report'].forEach(k=>$('n_'+k).className=k===p?'on':'');
+ $('who').textContent=ME;
+ try{if(p==='report')await report();else{await home();entryForm(p==='give'?'give':'made')}}
+ catch(e){$('main').innerHTML='<div class="card"><div class="err">'+esc(e.message)+'</div></div>'}
 }
-async function api(opt){const r=await authFetch('/api/wa',opt);const j=await r.json();if(!r.ok)throw new Error(j.error||'error');return j}
-let note='';
-async function load(){try{const j=await api();rows=j.rows;note='';if(j.midlandError)note='Could not load stamping from Midland: '+j.midlandError;const sk=Object.keys(j.skipped||{});if(sk.length)note+=(note?' | ':'')+'Midland shows stamping issued to these names, but they are not in this app: '+sk.join(', ');render()}catch(e){document.getElementById('sum').innerHTML='<div class="box err">Could not load: '+esc(e.message)+'</div>'}}
-async function save(){
- const stype=document.getElementById('f_type').value.trim(),qty=Number(document.getElementById('f_qty').value),d=document.getElementById('f_d').value,note=document.getElementById('f_note').value;
- const err=document.getElementById('ferr');err.textContent='';
- if(!stype){err.textContent='Enter the stamping type';return}
- if(!(qty>0)){err.textContent='Enter the quantity';return}
- if(!d||d<START){err.textContent='Date must be 1 Oct 2026 or later';return}
- const t=calc()[stype]||{unp:0,ready:0};
- if((tab==='wound'||tab==='transfer')&&qty>t.unp&&!confirm('Stamping balance is '+fmt(t.unp)+' but you entered '+fmt(qty)+'. Save anyway?'))return;
- if(tab==='sent'&&qty>t.ready&&!confirm('Ready winding is '+fmt(t.ready)+' but you entered '+fmt(qty)+'. Save anyway?'))return;
- const party=tab==='transfer'?document.getElementById('f_party').value:(tab==='sent'?NEXT:null);
- const btn=document.getElementById('save');btn.disabled=true;
- try{await api({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',kind:tab,contractor:ME,party,stype,qty,d,note})});
-  msg('Saved');await load()}catch(e){err.textContent=e.message;btn.disabled=false}
-}
-async function del(id){if(!confirm('Delete this entry?'))return;try{await api({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id})});await load()}catch(e){msg(e.message)}}
-function label(r){
- const nm=Object.fromEntries(TABS);nm.stamp_in='Manual receipt';
- if(r.src==='midland')return 'Received from Midland';
- if(r.kind==='transfer')return r.contractor===ME?'Transferred to '+r.party:'Transferred from '+r.contractor;
- if(r.kind==='sent')return 'Sent to '+NEXT;
- return nm[r.kind];
-}
-function renderList(){
- const mine=rows.filter(r=>r.kind!=='dispatch'&&(r.contractor===ME||r.party===ME&&r.kind==='transfer')).slice().reverse();
- if(!mine.length){document.getElementById('list').innerHTML='<div class="mut">Nothing yet.</div>';return}
- let h='<table><tr><th>Date</th><th>Entry</th><th>Type</th><th>Qty</th><th></th></tr>';
- mine.forEach(r=>{const canDel=r.contractor===ME&&!r.src;h+='<tr><td>'+dm(r.d)+'</td><td>'+esc(label(r))+(r.note?'<br><span class="mut">'+esc(r.note)+'</span>':'')+'</td><td>'+esc(r.stype)+'</td><td>'+fmt(r.qty)+'</td><td>'+(canDel?(canEdit(r)?'<button class="del" onclick="editEntry('+r.id+')">Edit</button>':'')+(IS_ADM?' <button class="del" onclick="del('+r.id+')">x</button>':''):'')+'</td></tr>'});
- document.getElementById('list').innerHTML=h+'</table>';
-}
-render();load();
-</script></div></body></html>
+window.onhashchange=route;route();
+</script></body></html>
