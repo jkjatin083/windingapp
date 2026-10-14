@@ -59,10 +59,12 @@ function book(){
  document.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>issueSheet(D.orders.find(o=>o.id==b.dataset.i)));
 }
 function demand(){
- let h='<h2>Stamping by contractor</h2><div class="sub">Bar = stators wound / issued. Left = issued - wound. Holds = Midland stamping sent - wound.</div>';
+ let h='<h2>Stamping by contractor</h2><div class="sub">Bar = stators wound / issued. Per stamping type: Need = issued - wound for orders with that stamping. Holds = that exact type with the contractor (Midland sent - wound).</div>';
  if(D.midlandError)h+='<div class="err">Midland not readable: '+esc(D.midlandError)+'</div>';
  if(!D.demand.length)h+='<div class="sub" style="margin-top:14px">No issued orders yet.</div>';
- D.demand.forEach(d=>{const s=d.send>0;h+='<div style="padding:14px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b'+(s?' class="red"':'')+'>'+esc(d.contractor)+'</b><span>'+fmt(d.wound)+' / '+fmt(d.qty)+'</span></div>'+bar(d.wound,d.qty)+'<div class="sub" style="margin-top:6px">Left '+fmt(d.left)+' | Holds '+fmt(d.holds)+' | '+(s?'<span class="red">SEND '+fmt(d.send)+'</span>':'<span class="t">enough</span>')+'</div></div>'});
+ D.demand.forEach(d=>{const s=d.send>0;h+='<div style="padding:14px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b'+(s?' class="red"':'')+'>'+esc(d.contractor)+'</b><span>'+fmt(d.wound)+' / '+fmt(d.qty)+'</span></div>'+bar(d.wound,d.qty)+
+  '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:8px;font-size:14px"><colgroup><col><col style="width:70px"><col style="width:70px"><col style="width:84px"></colgroup><tr style="color:var(--mute);text-align:right"><td style="text-align:left">Stamping</td><td>Need</td><td>Holds</td><td>Send</td></tr>'+
+  d.rows.map(r=>'<tr style="text-align:right;border-top:1px solid var(--line)"><td style="text-align:left;padding:7px 0">'+esc(r.type)+'</td><td>'+(r.need?fmt(r.need):'-')+'</td><td>'+fmt(r.holds)+'</td><td>'+(r.send>0?'<span class="red"><b>'+fmt(r.send)+'</b></span>':(r.need?'<span class="t">ok</span>':'<span class="sub">not needed</span>'))+'</td></tr>').join('')+'</table></div>'});
  $("main").innerHTML=h;
 }
 function rotor(){
