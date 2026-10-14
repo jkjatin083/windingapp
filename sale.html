@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sale Orders</title>
+<style>:root{--t:#0f766e;--ink:#17202a;--mute:#7b8794;--line:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;background:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:16px}
+.w{max-width:720px;margin:0 auto;padding:22px 18px 90px}
+h1{font-size:26px;font-weight:650;margin:0 0 4px}h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600;margin:28px 0 10px}
+.sub{color:var(--mute);font-size:14px}.top{display:flex;justify-content:space-between;align-items:baseline}
+a.lo{color:var(--mute);font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.row b{font-weight:600}.row .m{color:var(--mute);font-size:14px;margin-top:2px}
+.bar{height:6px;background:#eef2f2;border-radius:3px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--t)}
+.btn{border:1px solid var(--t);color:var(--t);background:#fff;border-radius:8px;padding:8px 16px;font:inherit;font-size:15px;cursor:pointer}
+.btn.f{background:var(--t);color:#fff}.btn:disabled{opacity:.5}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;gap:34px;padding:12px 0 16px}
+nav a{color:var(--mute);text-decoration:none;font-size:15px}nav a.on{color:var(--t);font-weight:650}
+label{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mute);margin:18px 0 6px}
+input,select{width:100%;font:inherit;font-size:17px;border:0;border-bottom:1px solid var(--line);padding:8px 0;background:transparent;outline:none;border-radius:0}
+input:focus,select:focus{border-bottom-color:var(--t)}
+.err{color:#b3261e;font-size:14px;margin-top:10px;min-height:18px}
+.t{color:var(--t)}.red{color:#b3261e}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--t);color:#fff;padding:8px 18px;border-radius:20px;display:none;font-size:14px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}.sheet{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:20px}
+.opt{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}.opt.on{color:var(--t);font-weight:650}
+</style></head><body><div class="w"><div id="toast"></div>
+<div class="top"><div><h1>Sale Orders</h1><div class="sub" id="who"></div></div><a class="lo" href="#" id="lo">Log out</a></div>
+<div id="main"></div></div>
+<nav><a href="#new" id="n_new">New order</a><a href="#list" id="n_list">Orders</a><a href="#status" id="n_status">Status</a></nav>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+const fmt=n=>Number(n).toLocaleString("en-IN");
+const dm=d=>{if(!d)return "";const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return +d.slice(8,10)+" "+m[+d.slice(5,7)-1]};
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2200)}
+
+const ME=localStorage.getItem("wa_name"),TOKEN=localStorage.getItem("wa_token");
+if(!TOKEN||ME!=="Sandeep"){location.href="index.html"}
+$("who").textContent=ME;
+$("lo").onclick=e=>{e.preventDefault();localStorage.removeItem("wa_token");localStorage.removeItem("wa_name");location.href="index.html"};
+async function api(opt){opt=opt||{};opt.headers=Object.assign({},opt.headers||{},{Authorization:"Bearer "+TOKEN});const r=await fetch("/api/s",opt);if(r.status===401){location.href="index.html";return}const j=await r.json();if(!r.ok)throw new Error(j.error||"error");return j}
+let D=null,F={customer:"",stator_type:"",winding_type:"",motor_type:"",rotor_item:"",qty:"",due:""};
+function sheet(title,list,cur,onPick,addKind){
+ const o=document.createElement("div");o.className="ov";
+ o.innerHTML='<div class="sheet"><div class="sub" style="margin-bottom:6px">'+esc(title)+'</div><div style="max-height:46vh;overflow:auto">'+list.map(x=>'<div class="opt'+(x===cur?" on":"")+'" data-v="'+esc(x)+'"><span>'+esc(x)+'</span></div>').join("")+'</div>'+
+  (addKind?'<label>Add new</label><div style="display:flex;gap:10px"><input id="nv" placeholder="type new value"><button class="btn" id="na">Add</button></div>':"")+'<div style="margin-top:14px"><button class="btn" id="cl">Close</button></div></div>';
+ document.body.appendChild(o);
+ o.onclick=e=>{if(e.target===o)o.remove()};$("cl").onclick=()=>o.remove();
+ o.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{onPick(b.dataset.v);o.remove()});
+ if(addKind)$("na").onclick=async()=>{const v=$("nv").value.trim();if(!v)return;try{await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"option",kind:addKind,val:v})});await load();onPick(v);o.remove()}catch(e){toast(e.message)}};
+}
+function grab(){["customer","qty","due"].forEach(k=>{if($("f_"+k))F[k]=$("f_"+k).value})}
+function pickField(id,label,key){return '<label>'+label+'</label><div id="'+id+'" style="padding:8px 0;border-bottom:1px solid var(--line);font-size:17px;cursor:pointer;display:flex;justify-content:space-between"><span style="color:'+(F[key]?"var(--ink)":"var(--mute)")+'">'+esc(F[key]||"Choose")+'</span><span class="sub">&#9662;</span></div>'}
+function form(){
+ let h='<h2>New order</h2>';
+ h+='<label>Customer</label><input id="f_customer" value="'+esc(F.customer)+'" placeholder="Customer name">';
+ h+=pickField("p_st","Stator type","stator_type")+pickField("p_wd","Winding type","winding_type")+pickField("p_mt","Motor type","motor_type")+pickField("p_ro","Rotor (optional)","rotor_item");
+ h+='<label>Quantity</label><input id="f_qty" type="number" inputmode="numeric" min="1" value="'+esc(F.qty)+'" placeholder="0">';
+ h+='<label>Due date (optional)</label><input id="f_due" type="date" value="'+esc(F.due)+'">';
+ h+='<button class="btn f" id="go" style="width:100%;margin-top:26px;padding:14px;font-size:17px">Save order</button><div class="err" id="err"></div>';
+ $("main").innerHTML=h;
+ $("p_st").onclick=()=>{grab();sheet("Stator type",D.stamps,F.stator_type,v=>{F.stator_type=v;form()})};
+ $("p_wd").onclick=()=>{grab();sheet("Winding type",D.winding,F.winding_type,v=>{F.winding_type=v;form()},"winding")};
+ $("p_mt").onclick=()=>{grab();sheet("Motor type",D.motor,F.motor_type,v=>{F.motor_type=v;form()},"motor")};
+ $("p_ro").onclick=()=>{grab();sheet("Rotor",["(none)"].concat(D.rotors),F.rotor_item,v=>{F.rotor_item=v==="(none)"?"":v;form()})};
+ $("go").onclick=async()=>{grab();$("err").textContent="";$("go").disabled=true;
+  try{const j=await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:"add"},F,{qty:Number(F.qty)}))});
+   toast("Saved: order #"+j.order_no);F={customer:"",stator_type:"",winding_type:"",motor_type:"",rotor_item:"",qty:"",due:""};await load();location.hash="#list"}
+  catch(e){$("err").textContent=e.message;$("go").disabled=false}};
+}
+function list(){
+ let h='<h2>Orders</h2>';
+ if(!D.orders.length)h+='<div class="sub">No orders yet.</div>';
+ D.orders.forEach(o=>{h+='<div class="row"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+(o.cancelled?' (cancelled)':'')+'</b><div class="m">'+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.due?' | due '+dm(o.due):'')+'</div></div><div style="text-align:right"><b>'+fmt(o.qty)+'</b><div class="m">'+(o.issued?fmt(o.issued)+' issued':'waiting')+'</div></div></div>'});
+ $("main").innerHTML=h;
+}
+function status(){
+ let h='<h2>Order status</h2><div class="sub">Green line stops at the current step. Date = day that step finished. Ready to dispatch is automatic when all motors are made (Pandey ji entries).</div>';
+ if(!D.orders.length)h+='<div class="sub" style="margin-top:14px">No orders yet.</div>';
+ D.orders.filter(o=>!o.cancelled).forEach(o=>{
+  const p=(D.pipe||[]).find(x=>x.id===o.id),st=p?p.stages:[{k:"Order",done:true,date:o.created},{k:"Winding"},{k:"Motor"},{k:"Ready to dispatch"},{k:"Dispatched"},{k:"Order completed"}];
+  let last=0;st.forEach((s,i)=>{if(s.done)last=i});
+  h+='<div style="padding:18px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><span class="sub">'+fmt(o.qty)+' | '+esc(o.winding_type)+'</span></div>';
+  h+='<div style="position:relative;margin:22px 8px 0;height:12px"><div style="position:absolute;left:0;right:0;top:4px;height:4px;background:#e5e7eb;border-radius:2px"></div><div style="position:absolute;left:0;top:4px;height:4px;background:var(--t);border-radius:2px;width:'+(last*20)+'%"></div>';
+  st.forEach((s,i)=>{const part=!s.done&&s.n>0&&i>0&&i-1<=last;h+='<div style="position:absolute;left:calc('+(i*20)+'% - 6px);top:0;width:12px;height:12px;border-radius:50%;background:'+(s.done?"var(--t)":(part?"#99d6cf":"#fff"))+';border:2px solid '+(s.done||part?"var(--t)":"#cbd5e1")+'"></div>'});
+  h+='</div><div style="display:flex;margin:10px 0 0">';
+  st.forEach(s=>{h+='<div style="flex:1;text-align:center;font-size:11px;line-height:1.3;color:'+(s.done?"var(--ink)":"var(--mute)")+'">'+esc(s.k)+'<div style="color:var(--t);font-weight:600;margin-top:3px">'+(s.done?esc(dm(s.date)):(s.n>0&&["Winding","Motor","Dispatched"].includes(s.k)?fmt(s.n)+" / "+fmt(o.qty):"-"))+'</div></div>'});
+  h+='</div></div>'});
+ $("main").innerHTML=h;
+}
+async function load(){D=await api()}
+async function route(){const p=(location.hash||"#new").slice(1);["new","list","status"].forEach(k=>$("n_"+k).className=k===p?"on":"");
+ try{if(!D)await load();if(p==="list"){await load();list()}else if(p==="status"){await load();status()}else form()}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+window.onhashchange=route;route();
+</script></body></html>
