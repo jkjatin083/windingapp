@@ -142,6 +142,10 @@ async function addEntry(sql, me, b, res) {
           INSERT INTO wa_entries (kind, contractor, party, stype, qty, d, note)
           VALUES (${b.kind}, ${b.contractor}, ${party}, ${stype}, ${qty}, ${d}::date, ${note})
           RETURNING id`;
+        // ORDER TAG: link this entry to the order issued to that winding contractor
+        if ((isMade || isMD) && Number(b.issue_id) > 0) {
+          try { await sql`INSERT INTO ca_meta (entry_id, issue_id) SELECT ${r[0].id}, i.id FROM ca_issues i WHERE i.id = ${Number(b.issue_id)} AND i.contractor = ${party} ON CONFLICT DO NOTHING`; } catch (e) { /* order tables not ready */ }
+        }
         const kq = Number(b.kuppa || 0);
         if (isMade && kq > 0) {
           if (kq > qty) {
@@ -257,6 +261,7 @@ export default async function handler(req, res) {
             if ((await windAvail(sql, me, k.p, k.s, 0)) < 0) { await undo(nid); return res.status(409).json({ error: 'Cannot save: winding would go negative' }); }
           }
         }
+        try { await sql`INSERT INTO ca_meta (entry_id, issue_id) SELECT ${nid}, issue_id FROM ca_meta WHERE entry_id = ${id} ON CONFLICT DO NOTHING`; } catch (e) { /* keep the order tag on edit */ }
         return res.status(200).json({ ok: true, id: nid });
       }
       return res.status(400).json({ error: 'Invalid action' });
