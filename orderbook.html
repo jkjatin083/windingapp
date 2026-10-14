@@ -1,0 +1,79 @@
+
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Order Book</title>
+<style>:root{--t:#0f766e;--ink:#17202a;--mute:#7b8794;--line:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;background:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:16px}
+.w{max-width:720px;margin:0 auto;padding:22px 18px 90px}
+h1{font-size:26px;font-weight:650;margin:0 0 4px}h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600;margin:28px 0 10px}
+.sub{color:var(--mute);font-size:14px}.top{display:flex;justify-content:space-between;align-items:baseline}
+a.lo{color:var(--mute);font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.row b{font-weight:600}.row .m{color:var(--mute);font-size:14px;margin-top:2px}
+.bar{height:6px;background:#eef2f2;border-radius:3px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--t)}
+.btn{border:1px solid var(--t);color:var(--t);background:#fff;border-radius:8px;padding:8px 16px;font:inherit;font-size:15px;cursor:pointer}
+.btn.f{background:var(--t);color:#fff}.btn:disabled{opacity:.5}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;gap:34px;padding:12px 0 16px}
+nav a{color:var(--mute);text-decoration:none;font-size:15px}nav a.on{color:var(--t);font-weight:650}
+label{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mute);margin:18px 0 6px}
+input,select{width:100%;font:inherit;font-size:17px;border:0;border-bottom:1px solid var(--line);padding:8px 0;background:transparent;outline:none;border-radius:0}
+input:focus,select:focus{border-bottom-color:var(--t)}
+.err{color:#b3261e;font-size:14px;margin-top:10px;min-height:18px}
+.t{color:var(--t)}.red{color:#b3261e}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--t);color:#fff;padding:8px 18px;border-radius:20px;display:none;font-size:14px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}.sheet{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:20px}
+.opt{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}.opt.on{color:var(--t);font-weight:650}
+</style></head><body><div class="w"><div id="toast"></div>
+<div class="top"><div><h1>Order Book</h1><div class="sub">Admin</div></div><a class="lo" href="admin.html">Admin home</a></div>
+<div id="main"></div></div>
+<nav><a href="#book" id="n_book">Order Book</a><a href="#demand" id="n_demand">Stamping demand</a><a href="#rotor" id="n_rotor">Rotor</a></nav>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+const fmt=n=>Number(n).toLocaleString("en-IN");
+const dm=d=>{if(!d)return "";const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return +d.slice(8,10)+" "+m[+d.slice(5,7)-1]};
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2200)}
+
+const TOKEN=localStorage.getItem("wa_admin");if(!TOKEN){location.href="index.html"}
+async function api(opt){opt=opt||{};opt.headers=Object.assign({},opt.headers||{},{Authorization:"Bearer "+TOKEN});const r=await fetch("/api/o",opt);if(r.status===401){localStorage.removeItem("wa_admin");location.href="index.html";return}const j=await r.json();if(!r.ok)throw new Error(j.error||"error");return j}
+let D=null;
+const bar=(a,b)=>'<div class="bar"><i style="width:'+(b?Math.min(100,Math.round(100*a/b)):0)+'%"></i></div>';
+function issueSheet(o){
+ const left=o.qty-o.issued,o2=document.createElement("div");o2.className="ov";let pick=null;
+ o2.innerHTML='<div class="sheet"><div class="sub">Issue order #'+esc(o.order_no)+' | '+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+fmt(left)+' left</div>'+
+  D.contractors.map(c=>{const d=D.demand.find(x=>x.contractor===c);return '<div class="opt" data-v="'+c+'"><span>'+c+'</span><span class="sub">'+(d?'left '+fmt(d.left)+' | holds '+fmt(d.holds):'no open order')+'</span></div>'}).join("")+
+  '<label>Quantity to issue</label><input id="iq" type="number" inputmode="numeric" value="'+left+'"><div class="err" id="ie"></div>'+
+  '<div style="display:flex;gap:10px;margin-top:12px"><button class="btn f" id="ig" style="flex:1">Issue</button><button class="btn" id="ic">Cancel</button></div></div>';
+ document.body.appendChild(o2);o2.onclick=e=>{if(e.target===o2)o2.remove()};$("ic").onclick=()=>o2.remove();
+ o2.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{pick=b.dataset.v;o2.querySelectorAll(".opt").forEach(x=>x.classList.toggle("on",x===b))});
+ $("ig").onclick=async()=>{if(!pick){$("ie").textContent="Choose a contractor";return}$("ig").disabled=true;
+  try{await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"issue",order_id:o.id,contractor:pick,qty:Number($("iq").value)})});o2.remove();toast("Issued");await load();view()}catch(e){$("ie").textContent=e.message;$("ig").disabled=false}};
+}
+function book(){
+ const rec=D.orders.filter(o=>o.qty-o.issued>0);
+ let h='<h2>Orders received</h2>';
+ if(!rec.length)h+='<div class="sub">No new orders.</div>';
+ rec.forEach(o=>{h+='<div class="row"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><div class="m">'+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.due?' | due '+dm(o.due):'')+'</div></div><div style="display:flex;align-items:center;gap:14px"><div style="text-align:right"><b>'+fmt(o.qty-o.issued)+'</b><div class="m">to issue</div></div><button class="btn f" data-i="'+o.id+'">Issue</button></div></div>'});
+ h+='<h2>Order progress</h2>';
+ if(!D.issues.length)h+='<div class="sub">Nothing issued yet.</div>';
+ D.issues.forEach(i=>{h+='<div style="padding:14px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b>'+esc(i.contractor)+' <span class="sub">#'+esc(i.order_no)+' | '+esc(i.winding_type)+'</span></b><span>'+fmt(i.wound)+' / '+fmt(i.qty)+'</span></div>'+bar(i.wound,i.qty)+'<div class="sub" style="margin-top:6px">Given to Pandey ji '+fmt(i.given)+(i.due?' | due '+dm(i.due):'')+'</div></div>'});
+ $("main").innerHTML=h;
+ document.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>issueSheet(D.orders.find(o=>o.id==b.dataset.i)));
+}
+function demand(){
+ let h='<h2>Stamping by contractor</h2><div class="sub">Bar = stators wound / issued. Left = issued - wound. Holds = Midland stamping sent - wound.</div>';
+ if(D.midlandError)h+='<div class="err">Midland not readable: '+esc(D.midlandError)+'</div>';
+ if(!D.demand.length)h+='<div class="sub" style="margin-top:14px">No issued orders yet.</div>';
+ D.demand.forEach(d=>{const s=d.send>0;h+='<div style="padding:14px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b'+(s?' class="red"':'')+'>'+esc(d.contractor)+'</b><span>'+fmt(d.wound)+' / '+fmt(d.qty)+'</span></div>'+bar(d.wound,d.qty)+'<div class="sub" style="margin-top:6px">Left '+fmt(d.left)+' | Holds '+fmt(d.holds)+' | '+(s?'<span class="red">SEND '+fmt(d.send)+'</span>':'<span class="t">enough</span>')+'</div></div>'});
+ $("main").innerHTML=h;
+}
+function rotor(){
+ let h='<h2>Rotor (from Midland)</h2><div class="sub">Stock from Midland. Need = quantity of open orders (with this rotor) not yet wound.</div>';
+ if(!D.rotor.length)h+='<div class="sub" style="margin-top:14px">No rotor stock or rotor orders yet.</div>';
+ D.rotor.forEach(r=>{const s=r.need>r.stock;h+='<div class="row"><div><b>'+esc(r.name)+'</b><div class="m">Need '+fmt(r.need)+'</div></div><div style="text-align:right"><b'+(s?' class="red"':'')+'>'+fmt(r.stock)+'</b><div class="m">in stock'+(s?' | short '+fmt(r.need-r.stock):'')+'</div></div></div>'});
+ $("main").innerHTML=h;
+}
+function view(){const p=(location.hash||"#book").slice(1);["book","demand","rotor"].forEach(k=>$("n_"+k).className=k===p?"on":"");({book,demand,rotor}[p]||book)()}
+async function load(){D=await api()}
+async function route(){try{await load();view()}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+window.onhashchange=()=>D?view():route();route();
+</script></body></html>
