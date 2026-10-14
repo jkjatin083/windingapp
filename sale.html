@@ -155,6 +155,9 @@ function overview(){
  (O.stators||[]).forEach((s,i)=>{h+='<div class="row'+(i?'':' f')+'"><div><b>'+esc(s.name)+'</b><small>wound '+fmt(s.wound)+' | given '+fmt(s.given)+(s.name==="Sunil"?' | kept with himself':'')+'</small>'+(s.oldest_days!=null&&s.ready>0?'<small'+(s.oldest_days>=5?' class="old"':'')+'>oldest ready: '+s.oldest_days+' day'+(s.oldest_days===1?'':'s')+'</small>':'')+'</div><span>'+fmt(s.ready)+'</span></div>';
   if(s.types.length>1)s.types.forEach(t=>{h+='<div class="row ty"><div><b>'+esc(t.name)+'</b></div><span>'+fmt(t.ready)+'</span></div>'})});
  h+='</div>';
+ if(O.inhand&&O.inhand.length){h+='<div class="card"><div class="lab">Ready wound stators - by Pandey ji / Sunil</div>';
+  O.inhand.forEach((m,i)=>{h+='<div class="row'+(i?'':' f')+'"><div><b>'+esc(m.name)+'</b><small>stators in hand, not yet made into motors</small></div><span>'+fmt(m.total)+'</span></div>';m.rows.forEach(r=>{h+='<div class="row ty"><div><b>from '+esc(r.name)+'</b></div><span>'+fmt(r.ready)+'</span></div>'})});
+  h+='</div>'}
  const wait=D.orders.filter(o=>!o.cancelled&&!o.issued);
  if(wait.length)h+='<div class="card"><div class="lab">Orders waiting (not issued)</div>'+wait.map((o,i)=>'<div class="row'+(i?'':' f')+'"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><small>'+(o.created?dm(o.created)+' | ':'')+esc(o.winding_type)+' | '+esc(o.stator_type)+'</small></div><span style="color:var(--mute)">'+fmt(o.qty)+'</span></div>').join('')+'</div>';
  $("main").innerHTML=h;
