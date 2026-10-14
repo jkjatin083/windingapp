@@ -1,93 +1,167 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sale Orders</title>
-<style>:root{--t:#0f766e;--ink:#17202a;--mute:#7b8794;--line:#e5e7eb}
-*{box-sizing:border-box}body{margin:0;background:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:16px}
-.w{max-width:720px;margin:0 auto;padding:22px 18px 90px}
-h1{font-size:26px;font-weight:650;margin:0 0 4px}h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600;margin:28px 0 10px}
-.sub{color:var(--mute);font-size:14px}.top{display:flex;justify-content:space-between;align-items:baseline}
-a.lo{color:var(--mute);font-size:14px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
-.row b{font-weight:600}.row .m{color:var(--mute);font-size:14px;margin-top:2px}
-.bar{height:6px;background:#eef2f2;border-radius:3px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--t)}
-.btn{border:1px solid var(--t);color:var(--t);background:#fff;border-radius:8px;padding:8px 16px;font:inherit;font-size:15px;cursor:pointer}
-.btn.f{background:var(--t);color:#fff}.btn:disabled{opacity:.5}
-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;gap:34px;padding:12px 0 16px}
-nav a{color:var(--mute);text-decoration:none;font-size:15px}nav a.on{color:var(--t);font-weight:650}
-label{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mute);margin:18px 0 6px}
-input,select{width:100%;font:inherit;font-size:17px;border:0;border-bottom:1px solid var(--line);padding:8px 0;background:transparent;outline:none;border-radius:0}
-input:focus,select:focus{border-bottom-color:var(--t)}
-.err{color:#b3261e;font-size:14px;margin-top:10px;min-height:18px}
-.t{color:var(--t)}.red{color:#b3261e}
-#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--t);color:#fff;padding:8px 18px;border-radius:20px;display:none;font-size:14px}
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}.sheet{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:20px}
-.opt{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}.opt.on{color:var(--t);font-weight:650}
+<style>
+*{box-sizing:border-box;margin:0}
+:root{--bg:#f5f6f8;--ink:#101828;--mute:#667085;--line:#eaecf0;--a:#0e9f83;--a2:#e7f6f2;--amb:#b54708;--amb2:#fffaeb;--red:#b3261e}
+body{background:var(--bg);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:16px}
+.w{max-width:520px;margin:0 auto;padding:14px 18px 170px}
+.top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 16px}
+.who{display:flex;align-items:center;gap:10px}.av{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:600}
+.who small{display:block;color:var(--mute);font-size:12px}.who b{font-size:15px}
+.chipd{background:#fff;border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:12.5px;color:var(--mute);font-weight:500;text-align:center}
+a.lo{color:var(--mute);font-size:12px;text-decoration:none;display:block;text-align:right;margin-top:3px}
+h1{font-size:30px;letter-spacing:-.02em;font-weight:700;margin-bottom:16px}
+.sub{color:var(--mute);font-size:13px;margin:-8px 0 14px}
+.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 0 0 1px var(--line)}
+.lab{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.ord{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.ord b{font-size:17px}.ord small{display:block;color:var(--mute);font-size:13px;margin-top:3px;line-height:1.35}
+.pill{background:var(--a2);color:var(--a);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.tag{font-size:11px;font-weight:600;border-radius:20px;padding:3px 9px;background:#eef0f3;color:var(--mute);white-space:nowrap}.tag.g{background:var(--a2);color:var(--a)}.tag.a{background:var(--amb2);color:var(--amb)}
+.kp{display:flex;gap:10px;margin-bottom:12px}.kp .card{flex:1;margin:0;padding:14px}.kp b{font-size:26px;display:block;letter-spacing:-.02em}.kp small{color:var(--mute);font-size:12px}.kp .a b{color:var(--a)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}.row.f{border-top:0;padding-top:0}.row b{font-size:14.5px}.row small{display:block;color:var(--mute);font-size:12px;margin-top:2px}.row small.old{color:var(--amb)}.row>span{font-weight:700;color:var(--a);font-size:17px;font-variant-numeric:tabular-nums}.row.ty{padding:6px 0 6px 12px;border-top:1px dashed var(--line)}.row.ty b{font-size:13px;font-weight:500;color:var(--mute)}.row.ty>span{font-size:13px}
+.inp{border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;background:#fff;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}.inp small{color:var(--mute);font-size:12px;display:block;margin-bottom:2px}.inp .ph{color:#98a2b3}.inp span.c{color:var(--mute)}
+input.f{width:100%;font:inherit;font-size:15px;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;outline:none;margin-bottom:10px;color:var(--ink)}input.f:focus{border-color:var(--a)}
+.fl small{color:var(--mute);font-size:12px;display:block;margin:0 0 4px 2px}
+.qty{text-align:center}.qty .lab{text-align:left}
+input.num{width:100%;border:0;text-align:center;font:inherit;font-size:52px;font-weight:700;letter-spacing:-.03em;background:transparent;outline:none;color:var(--ink);padding:2px 0}input.num::placeholder{color:#d0d5dd}
+.qs{display:flex;gap:8px;justify-content:center;margin-top:6px}.qs button{border:1px solid var(--line);border-radius:12px;padding:9px 14px;font:inherit;font-weight:600;font-size:14px;background:#fff;color:var(--ink)}
+.addm{text-align:center;color:var(--a);font-weight:700;border:0;box-shadow:0 0 0 1.5px var(--a);background:var(--a2);padding:14px;border-radius:20px;margin-bottom:12px;cursor:pointer}
+.lnk{color:var(--mute);font-size:12px;font-weight:600;cursor:pointer;background:none;border:0;font-family:inherit}.lnk.g{color:var(--a)}
+.sticky{position:fixed;left:0;right:0;bottom:70px;padding:14px 18px 10px;background:linear-gradient(180deg,rgba(245,246,248,0),var(--bg) 40%)}.sticky>div{max-width:520px;margin:0 auto}
+.btn{width:100%;border:0;border-radius:16px;background:var(--a);color:#fff;font:inherit;font-weight:600;font-size:17px;padding:17px}.btn:disabled{opacity:.5}
+.btn.s{width:auto;font-size:14px;padding:9px 16px;border-radius:12px}.btn.o{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.err{color:var(--red);font-size:14px;text-align:center;min-height:18px;margin-bottom:6px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}.tabs button{padding:8px 13px;border-radius:20px;font:inherit;font-size:13px;font-weight:600;color:var(--mute);background:#fff;border:1px solid var(--line)}.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.good{background:var(--a2);color:#0b6e5a;border-radius:14px;padding:12px 14px;font-size:13px;margin-bottom:12px}
+.tl{margin-top:14px}.tl .s{display:flex;gap:12px;padding-bottom:14px;position:relative}
+.tl .s:before{content:"";position:absolute;left:10px;top:22px;bottom:0;width:2px;background:#e4e7ec}.tl .s.d:before{background:var(--a)}.tl .s:last-child:before{display:none}.tl .s:last-child{padding-bottom:0}
+.tl i{width:22px;height:22px;border-radius:50%;background:#eef0f3;flex:none;font-style:normal;text-align:center;line-height:22px;font-size:11px;font-weight:700;color:var(--mute)}
+.tl .d i{background:var(--a);color:#fff}.tl .c i{background:#fff;border:2px solid var(--a);color:var(--a);line-height:18px}
+.tl .x{flex:1;display:flex;justify-content:space-between;font-size:13.5px;gap:8px}.tl .x b{font-weight:600}.tl .x small{display:block;color:var(--mute);font-size:12px;margin-top:1px}.tl .x span{font-weight:700;font-variant-numeric:tabular-nums;font-size:13.5px;white-space:nowrap}.tl .x span.m{color:var(--mute);font-weight:500}
+.bar{height:6px;background:#eef0f3;border-radius:3px;margin:10px 0 0;overflow:hidden}.bar i{display:block;height:100%;background:var(--a)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+nav{position:fixed;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding-top:9px;z-index:5}
+nav a{text-align:center;font-size:11.5px;color:#98a2b3;font-weight:500;text-decoration:none;flex:1}nav a.on{color:var(--a);font-weight:700}nav svg{display:block;margin:0 auto 4px}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 20px;border-radius:30px;display:none;font-size:14px;z-index:20}
+.ov{position:fixed;inset:0;background:rgba(16,24,40,.4);display:flex;align-items:flex-end;justify-content:center;z-index:30}.sheet{background:#fff;width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:20px}
+.opt{display:flex;justify-content:space-between;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);margin-bottom:8px;cursor:pointer;font-size:15px}.opt.on{border-color:var(--a);background:var(--a2);font-weight:700}
+label.l{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:14px 0 6px}
 </style></head><body><div class="w"><div id="toast"></div>
-<div class="top"><div><h1>Sale Orders</h1><div class="sub" id="who"></div></div><a class="lo" href="#" id="lo">Log out</a></div>
-<div id="main"></div></div>
-<nav><a href="#new" id="n_new">New order</a><a href="#list" id="n_list">Orders</a><a href="#status" id="n_status">Status</a></nav>
+<div class="top"><div class="who"><div class="av">S</div><div><small>Sale Orders</small><b id="who"></b></div></div><div><div class="chipd" id="dt"></div><a class="lo" href="#" id="lo">Log out</a></div></div>
+<h1 id="ttl">Overview</h1><div id="main"></div></div>
+<div id="bar"></div>
+<nav>
+<a href="#overview" id="n_overview"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l8-7 8 7v8H3z"/></svg>Overview</a>
+<a href="#new" id="n_new"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4v14M4 11h14"/></svg>New order</a>
+<a href="#list" id="n_list"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h12v14H5zM8 8h6M8 12h6"/></svg>Orders</a>
+<a href="#status" id="n_status"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h4l3-6 4 12 3-6h2"/></svg>Status</a></nav>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
 const fmt=n=>Number(n).toLocaleString("en-IN");
 const dm=d=>{if(!d)return "";const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return +d.slice(8,10)+" "+m[+d.slice(5,7)-1]};
-function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2200)}
-
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2600)}
 const ME=localStorage.getItem("wa_name"),TOKEN=localStorage.getItem("wa_token");
 if(!TOKEN||ME!=="Sandeep"){location.href="index.html"}
 $("who").textContent=ME;
 $("lo").onclick=e=>{e.preventDefault();localStorage.removeItem("wa_token");localStorage.removeItem("wa_name");location.href="index.html"};
 async function api(opt){opt=opt||{};opt.headers=Object.assign({},opt.headers||{},{Authorization:"Bearer "+TOKEN});const r=await fetch("/api/s",opt);if(r.status===401){location.href="index.html";return}const j=await r.json();if(!r.ok)throw new Error(j.error||"error");return j}
-let D=null,F={customer:"",stator_type:"",winding_type:"",motor_type:"",rotor_item:"",qty:"",due:""};
+const todayIST=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date());
+$("dt").textContent=dm(todayIST());
+function setBar(html){$("bar").innerHTML=html?'<div class="sticky"><div><div class="err" id="err"></div>'+html+'</div></div>':""}
+const newLine=()=>({stator_type:"",winding_type:"",motor_type:"",rotor_item:"",qty:""});
+const blank=()=>({customer:"",due:"",order_date:todayIST(),lines:[newLine()],cur:0});
+let D=null,F=blank(),ltab="all";
 function sheet(title,list,cur,onPick,addKind){
  const o=document.createElement("div");o.className="ov";
- o.innerHTML='<div class="sheet"><div class="sub" style="margin-bottom:6px">'+esc(title)+'</div><div style="max-height:46vh;overflow:auto">'+list.map(x=>'<div class="opt'+(x===cur?" on":"")+'" data-v="'+esc(x)+'"><span>'+esc(x)+'</span></div>').join("")+'</div>'+
-  (addKind?'<label>Add new</label><div style="display:flex;gap:10px"><input id="nv" placeholder="type new value"><button class="btn" id="na">Add</button></div>':"")+'<div style="margin-top:14px"><button class="btn" id="cl">Close</button></div></div>';
+ o.innerHTML='<div class="sheet"><div class="lab">'+esc(title)+'</div><div style="max-height:46vh;overflow:auto">'+list.map(x=>'<div class="opt'+(x===cur?" on":"")+'" data-v="'+esc(x)+'"><span>'+esc(x)+'</span></div>').join("")+'</div>'+
+  (addKind?'<label class="l">Add new</label><div style="display:flex;gap:10px"><input class="f" id="nv" placeholder="type new value" style="margin:0"><button class="btn s" id="na">Add</button></div>':"")+'<div style="margin-top:14px"><button class="btn s o" id="cl">Close</button></div></div>';
  document.body.appendChild(o);
  o.onclick=e=>{if(e.target===o)o.remove()};$("cl").onclick=()=>o.remove();
  o.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{onPick(b.dataset.v);o.remove()});
  if(addKind)$("na").onclick=async()=>{const v=$("nv").value.trim();if(!v)return;try{await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"option",kind:addKind,val:v})});await load();onPick(v);o.remove()}catch(e){toast(e.message)}};
 }
-function grab(){["customer","qty","due"].forEach(k=>{if($("f_"+k))F[k]=$("f_"+k).value})}
-function pickField(id,label,key){return '<label>'+label+'</label><div id="'+id+'" style="padding:8px 0;border-bottom:1px solid var(--line);font-size:17px;cursor:pointer;display:flex;justify-content:space-between"><span style="color:'+(F[key]?"var(--ink)":"var(--mute)")+'">'+esc(F[key]||"Choose")+'</span><span class="sub">&#9662;</span></div>'}
+function grab(){["customer","due","order_date"].forEach(k=>{if($("f_"+k))F[k]=$("f_"+k).value});if($("f_qty"))F.lines[F.cur].qty=$("f_qty").value}
+function pf(id,label,val,ph){return '<div class="inp" id="'+id+'"><div><small>'+label+'</small><span class="'+(val?"":"ph")+'">'+esc(val||ph||"Choose")+'</span></div><span class="c">&#9662;</span></div>'}
+function lineText(l){return [l.stator_type,l.winding_type,l.motor_type,l.rotor_item?"rotor "+l.rotor_item:""].filter(Boolean).join(" | ")}
+function lineOk(l){return l.stator_type&&l.winding_type&&l.motor_type&&Number(l.qty)>0&&Number(l.qty)===Math.floor(Number(l.qty))}
 function form(){
- let h='<h2>New order</h2>';
- h+='<label>Customer</label><input id="f_customer" value="'+esc(F.customer)+'" placeholder="Customer name">';
- h+=pickField("p_st","Stamping type","stator_type")+pickField("p_wd","Winding type","winding_type")+pickField("p_mt","Motor type","motor_type")+pickField("p_ro","Rotor (optional)","rotor_item");
- h+='<label>Quantity</label><input id="f_qty" type="number" inputmode="numeric" min="1" value="'+esc(F.qty)+'" placeholder="0">';
- h+='<label>Due date (optional)</label><input id="f_due" type="date" value="'+esc(F.due)+'">';
- h+='<button class="btn f" id="go" style="width:100%;margin-top:26px;padding:14px;font-size:17px">Save order</button><div class="err" id="err"></div>';
+ const L=F.lines,l=L[F.cur],multi=L.length>1;
+ let h='<h1 id="ttl2" style="display:none"></h1>';
+ h+='<div class="fl"><small>Customer</small><input class="f" id="f_customer" value="'+esc(F.customer)+'" placeholder="Customer name"></div>';
+ L.forEach((x,i)=>{if(i!==F.cur)h+='<div class="card"><div class="ord"><div><b>Motor '+(i+1)+'</b><small>'+esc(lineText(x)||"Not filled yet")+'</small></div><div style="text-align:right"><b>'+(x.qty?fmt(x.qty):"-")+'</b><br><button class="lnk g" data-e="'+i+'">Edit</button></div></div></div>';
+  else{h+='<div class="card"'+(multi?' style="box-shadow:0 0 0 1.5px var(--a)"':'')+'>'+(multi?'<div class="ord"><div class="lab" style="color:var(--a)">Motor '+(i+1)+'</div><button class="lnk" data-r="'+i+'">Remove</button></div>':'')+
+   pf("p_st","Stamping type",l.stator_type)+pf("p_wd","Winding type",l.winding_type)+pf("p_mt","Motor type",l.motor_type)+pf("p_ro","Rotor type (optional)",l.rotor_item,"None")+
+   '<div class="qty"><div class="lab">Quantity</div><input class="num" id="f_qty" type="number" inputmode="numeric" min="1" value="'+esc(l.qty)+'" placeholder="0"><div class="qs"><button data-a="100">+100</button><button data-a="500">+500</button><button data-a="1000">+1,000</button></div></div></div>'}});
+ h+='<div class="addm" id="addm">+ Add another motor</div>';
+ h+='<div style="display:flex;gap:10px"><div class="fl" style="flex:1"><small>Due date (optional)</small><input class="f" id="f_due" type="date" value="'+esc(F.due)+'"></div><div class="fl" style="flex:1"><small>Order date</small><input class="f" id="f_order_date" type="date" max="'+todayIST()+'" value="'+esc(F.order_date||todayIST())+'"></div></div>';
  $("main").innerHTML=h;
- $("p_st").onclick=()=>{grab();sheet("Stamping type",D.stamps,F.stator_type,v=>{F.stator_type=v;form()})};
- $("p_wd").onclick=()=>{grab();sheet("Winding type",D.winding,F.winding_type,v=>{F.winding_type=v;form()},"winding")};
- $("p_mt").onclick=()=>{grab();sheet("Motor type",D.motor,F.motor_type,v=>{F.motor_type=v;form()},"motor")};
- $("p_ro").onclick=()=>{grab();sheet("Rotor",["(none)"].concat(D.rotors),F.rotor_item,v=>{F.rotor_item=v==="(none)"?"":v;form()})};
- $("go").onclick=async()=>{grab();$("err").textContent="";$("go").disabled=true;
-  try{const j=await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:"add"},F,{qty:Number(F.qty)}))});
-   toast("Saved: order #"+j.order_no);F={customer:"",stator_type:"",winding_type:"",motor_type:"",rotor_item:"",qty:"",due:""};await load();location.hash="#list"}
+ setBar('<button class="btn" id="go">'+(multi?"Save "+L.length+" orders":"Save order")+'</button>');
+ $("p_st").onclick=()=>{grab();sheet("Stamping type",D.stamps,l.stator_type,v=>{l.stator_type=v;form()})};
+ $("p_wd").onclick=()=>{grab();sheet("Winding type",D.winding,l.winding_type,v=>{l.winding_type=v;form()},"winding")};
+ $("p_mt").onclick=()=>{grab();sheet("Motor type",D.motor,l.motor_type,v=>{l.motor_type=v;form()},"motor")};
+ $("p_ro").onclick=()=>{grab();sheet("Rotor type",["(none)"].concat(D.rotors),l.rotor_item,v=>{l.rotor_item=v==="(none)"?"":v;form()})};
+ document.querySelectorAll(".qs button").forEach(b=>b.onclick=()=>{$("f_qty").value=(Number($("f_qty").value)||0)+Number(b.dataset.a)});
+ document.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{grab();F.cur=+b.dataset.e;form()});
+ document.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{grab();L.splice(+b.dataset.r,1);F.cur=Math.min(F.cur,L.length-1);form()});
+ $("addm").onclick=()=>{grab();$("err").textContent="";if(!lineOk(l)){$("err").textContent="Fill this motor first (stamping, winding, motor, quantity)";return}if(L.length>=20)return;L.push(newLine());F.cur=L.length-1;form();window.scrollTo(0,document.body.scrollHeight)};
+ $("go").onclick=async()=>{grab();$("err").textContent="";
+  if(!F.customer.trim()){$("err").textContent="Enter the customer";return}
+  for(let i=0;i<L.length;i++)if(!lineOk(L[i])){F.cur=i;form();$("err").textContent=(multi?"Motor "+(i+1)+": ":"")+"Choose stamping, winding, motor and a whole quantity above 0";return}
+  $("go").disabled=true;
+  try{const j=await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"add",customer:F.customer,due:F.due,order_date:F.order_date,lines:L.map(x=>({stator_type:x.stator_type,winding_type:x.winding_type,motor_type:x.motor_type,rotor_item:x.rotor_item,qty:Number(x.qty)}))})});
+   const nos=j.order_nos||[j.order_no];toast("Saved: "+(nos.length>1?"orders #"+nos.join(", #"):"order #"+nos[0]));F=blank();await load();location.hash="#list";route()}
   catch(e){$("err").textContent=e.message;$("go").disabled=false}};
 }
 function list(){
- let h='<h2>Orders</h2>';
- if(!D.orders.length)h+='<div class="sub">No orders yet.</div>';
- D.orders.forEach(o=>{h+='<div class="row"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+(o.cancelled?' (cancelled)':'')+'</b><div class="m">'+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.due?' | due '+dm(o.due):'')+'</div></div><div style="text-align:right"><b>'+fmt(o.qty)+'</b><div class="m">'+(o.issued?fmt(o.issued)+' issued':'waiting')+'</div></div></div>'});
+ setBar("");
+ let h='<div class="tabs">'+[["all","All"],["open","Open"],["new","Waiting"]].map(t=>'<button data-t="'+t[0]+'" class="'+(ltab===t[0]?"on":"")+'">'+t[1]+'</button>').join("")+'</div>';
+ const os=D.orders.filter(o=>ltab==="all"||(ltab==="new"?!o.issued&&!o.cancelled:(o.issued>0&&!o.cancelled)));
+ if(!os.length)h+='<div class="card sub" style="margin:0">No orders here.</div>';
+ const line=o=>'<small>'+(o.created?dm(o.created)+' | ':'')+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.rotor_item?' | rotor '+esc(o.rotor_item):'')+(o.due?' | due '+dm(o.due):'')+'</small>';
+ const grp=[];os.forEach(o=>{const g=grp[grp.length-1];if(g&&g[0].customer===o.customer&&g[0].created===o.created&&!o.cancelled&&!g[0].cancelled)g.push(o);else grp.push([o])});
+ grp.forEach(g=>{
+  if(g.length===1){const o=g[0];h+='<div class="card"><div class="ord"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+(o.cancelled?' (cancelled)':'')+'</b>'+line(o)+'</div><div style="text-align:right"><b>'+fmt(o.qty)+'</b><small>'+(o.issued?fmt(o.issued)+' issued':'waiting')+'</small></div></div></div>'}
+  else{h+='<div class="card"><div class="ord"><div><b>'+esc(g[0].customer)+'</b><small>'+dm(g[0].created)+' | '+g.length+' orders | '+fmt(g.reduce((a,o)=>a+o.qty,0))+' total</small></div></div>'+
+   g.map((o,i)=>'<div class="row'+(i?'':' f')+'" style="margin-top:'+(i?0:8)+'px"><div><b>#'+esc(o.order_no)+'</b><small>'+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.rotor_item?' | rotor '+esc(o.rotor_item):'')+(o.due?' | due '+dm(o.due):'')+'</small></div><div style="text-align:right"><b>'+fmt(o.qty)+'</b><small>'+(o.issued?fmt(o.issued)+' issued':'waiting')+'</small></div></div>').join('')+'</div>'}
+ });
  $("main").innerHTML=h;
+ document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{ltab=b.dataset.t;list()});
 }
 function status(){
- let h='<h2>Order status</h2><div class="sub">Green line stops at the current step. Date = day that step finished. Ready to dispatch is automatic when all motors are made (Pandey ji entries).</div>';
- if(!D.orders.length)h+='<div class="sub" style="margin-top:14px">No orders yet.</div>';
+ setBar("");
+ let h='<div class="sub">The line stops at the current step. Date = day that step finished. Ready to dispatch is automatic when all motors are made (Pandey ji / Sunil entries).</div>';
+ if(!D.orders.length)h+='<div class="card sub" style="margin:0">No orders yet.</div>';
+ const subs={"Order":"Order received","Winding":"Wound by contractors","Motor":"Made by Pandey ji / Sunil","Ready to dispatch":"Automatic","Dispatched":"Dispatched to customer","Order completed":"All dispatched"};
  D.orders.filter(o=>!o.cancelled).forEach(o=>{
   const p=(D.pipe||[]).find(x=>x.id===o.id),st=p?p.stages:[{k:"Order",done:true,date:o.created},{k:"Winding"},{k:"Motor"},{k:"Ready to dispatch"},{k:"Dispatched"},{k:"Order completed"}];
-  let last=0;st.forEach((s,i)=>{if(s.done)last=i});
-  h+='<div style="padding:18px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><span class="sub">'+fmt(o.qty)+' | '+esc(o.winding_type)+'</span></div>';
-  h+='<div style="position:relative;margin:22px 8px 0;height:12px"><div style="position:absolute;left:0;right:0;top:4px;height:4px;background:#e5e7eb;border-radius:2px"></div><div style="position:absolute;left:0;top:4px;height:4px;background:var(--t);border-radius:2px;width:'+(last*20)+'%"></div>';
-  st.forEach((s,i)=>{const part=!s.done&&s.n>0&&i>0&&i-1<=last;h+='<div style="position:absolute;left:calc('+(i*20)+'% - 6px);top:0;width:12px;height:12px;border-radius:50%;background:'+(s.done?"var(--t)":(part?"#99d6cf":"#fff"))+';border:2px solid '+(s.done||part?"var(--t)":"#cbd5e1")+'"></div>'});
-  h+='</div><div style="display:flex;margin:10px 0 0">';
-  st.forEach(s=>{h+='<div style="flex:1;text-align:center;font-size:11px;line-height:1.3;color:'+(s.done?"var(--ink)":"var(--mute)")+'">'+esc(s.k)+'<div style="color:var(--t);font-weight:600;margin-top:3px">'+(s.done?esc(dm(s.date)):(s.n>0&&["Winding","Motor","Dispatched"].includes(s.k)?fmt(s.n)+" / "+fmt(o.qty):"-"))+'</div></div>'});
-  h+='</div></div>'});
+  const cur=st.findIndex(s=>!s.done),all=cur<0;
+  h+='<div class="card"><div class="ord"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><small>'+fmt(o.qty)+' | '+esc(o.stator_type)+' | '+esc(o.winding_type)+'</small></div><span class="'+(all?'tag g':'pill')+'">'+(all?'Completed':esc(st[cur].k))+'</span></div><div class="tl">'+
+   st.map((s,i)=>{const cls=s.done?'d':(i===cur?'c':'');const cnt=["Winding","Motor","Dispatched"].includes(s.k);
+    const right=s.done?esc(dm(s.date)):(cnt?fmt(s.n||0)+' / '+fmt(o.qty):'-');
+    const sub=s.done&&cnt?fmt(o.qty)+' / '+fmt(o.qty):subs[s.k];
+    return '<div class="s '+cls+'"><i>'+(s.done?'&#10003;':(i===cur?'&bull;':''))+'</i><div class="x"><div><b>'+esc(s.k)+'</b><small>'+esc(sub)+'</small></div><span class="'+(cls?'':'m')+'">'+right+'</span></div></div>'}).join('')+'</div></div>'});
+ $("main").innerHTML=h;
+}
+function overview(){
+ setBar("");
+ const O=D.overview||{};
+ if(O.error){$("main").innerHTML='<div class="err">Could not load overview: '+esc(O.error)+'</div>';return}
+ let h='<div class="kp"><div class="card a"><small>Ready motors</small><b>'+fmt(O.ready_motors||0)+'</b></div><div class="card a"><small>Ready stators</small><b>'+fmt(O.ready_stators||0)+'</b></div></div>';
+ h+='<div class="card"><div class="lab">Ready motors - who has them</div>';
+ (O.motors||[]).forEach((m,i)=>{h+='<div class="row'+(i?'':' f')+'"><div><b>'+esc(m.name)+'</b><small>made '+fmt(m.made)+' | dispatched '+fmt(m.sent)+'</small></div><span>'+fmt(m.ready)+'</span></div>';m.from.forEach(f=>{h+='<div class="row ty"><div><b>from '+esc(f.name)+'</b></div><span>'+fmt(f.ready)+'</span></div>'})});
+ h+='</div><div class="card"><div class="lab">Ready wound stators - by contractor</div>';
+ if(!(O.stators||[]).length)h+='<div class="sub" style="margin:0">No stators wound yet.</div>';
+ (O.stators||[]).forEach((s,i)=>{h+='<div class="row'+(i?'':' f')+'"><div><b>'+esc(s.name)+'</b><small>wound '+fmt(s.wound)+' | given '+fmt(s.given)+(s.name==="Sunil"?' | kept with himself':'')+'</small>'+(s.oldest_days!=null&&s.ready>0?'<small'+(s.oldest_days>=5?' class="old"':'')+'>oldest ready: '+s.oldest_days+' day'+(s.oldest_days===1?'':'s')+'</small>':'')+'</div><span>'+fmt(s.ready)+'</span></div>';
+  if(s.types.length>1)s.types.forEach(t=>{h+='<div class="row ty"><div><b>'+esc(t.name)+'</b></div><span>'+fmt(t.ready)+'</span></div>'})});
+ h+='</div>';
+ const wait=D.orders.filter(o=>!o.cancelled&&!o.issued);
+ if(wait.length)h+='<div class="card"><div class="lab">Orders waiting (not issued)</div>'+wait.map((o,i)=>'<div class="row'+(i?'':' f')+'"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><small>'+(o.created?dm(o.created)+' | ':'')+esc(o.winding_type)+' | '+esc(o.stator_type)+'</small></div><span style="color:var(--mute)">'+fmt(o.qty)+'</span></div>').join('')+'</div>';
  $("main").innerHTML=h;
 }
 async function load(){D=await api()}
-async function route(){const p=(location.hash||"#new").slice(1);["new","list","status"].forEach(k=>$("n_"+k).className=k===p?"on":"");
- try{if(!D)await load();if(p==="list"){await load();list()}else if(p==="status"){await load();status()}else form()}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+async function route(){const p=(location.hash||"#overview").slice(1);["overview","new","list","status"].forEach(k=>$("n_"+k).className=k===p?"on":"");
+ $("ttl").textContent=({overview:"Overview",new:"New order",list:"Orders",status:"Status"})[p]||"Overview";
+ try{if(p==="new"){if(!D)await load();form()}else{await load();({list,status,overview}[p]||overview)()}}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
 window.onhashchange=route;route();
 </script></body></html>
