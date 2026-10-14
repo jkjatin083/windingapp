@@ -36,7 +36,8 @@ export default async function handler(req, res) {
       FROM ca_orders o WHERE o.cancelled = false ORDER BY o.id DESC LIMIT 200`;
     const issues = await sql`SELECT i.id, i.order_id, i.contractor, i.qty::int AS qty, o.order_no, o.winding_type, o.stator_type, to_char(o.due,'YYYY-MM-DD') AS due,
         COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'wound'),0)::int AS wound,
-        COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'sent'),0)::int AS given
+        COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'sent'),0)::int AS given,
+        COALESCE((SELECT string_agg(DISTINCT e.stype, ', ') FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'wound' AND e.stype IS DISTINCT FROM o.stator_type),'') AS used
       FROM ca_issues i JOIN ca_orders o ON o.id = i.order_id WHERE o.cancelled = false ORDER BY i.id DESC`;
 
     // Stamping each contractor holds = Midland stamping outward + manual receipts + transfers in - transfers out - wound
