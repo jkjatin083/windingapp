@@ -122,11 +122,13 @@ export default async function handler(req, res) {
       const mid = await midlandTypes(sql);
       const stamps = mid.stamps, rotors = mid.rotors;
       let pipe = []; try { pipe = await pipeline(sql, orders.filter(o => !o.cancelled)); } catch (e) { /* tables or entries not ready */ }
+      // Closed = every stage done, incl. all motors dispatched for the full order qty
+      orders.forEach(o => { const p = pipe.find(x => x.id === o.id); o.closed = !!(p && p.stages.every(st => st.done)); });
       let overview = null; try { overview = await overviewData(sql); } catch (e) { overview = { error: String(e.message || e) }; }
       return res.status(200).json({ orders, pipe, overview, winding: opt.filter(x => x.kind === 'winding').map(x => x.val), motor: Array.from(new Set(mid.motors.concat(opt.filter(x => x.kind === 'motor').map(x => x.val)))), stamps, rotors });
     }
     if (req.method === 'POST') {
-      if (me !== 'Sandeep') return res.status(403).json({ error: 'Only Sandeep adds orders' });
+      if (me !== 'Sandeep') return res.status(403).json({ error: 'Only Sandeep adds or edits orders' });
       const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
       const t = (v, n) => String(v || '').trim().slice(0, n || 80);
       if (b.action === 'option') {
@@ -141,6 +143,28 @@ export default async function handler(req, res) {
         if (x[0].n > 0) return res.status(409).json({ error: 'Already issued to a contractor. Ask Jatin.' });
         await sql`UPDATE ca_orders SET cancelled = true WHERE id = ${id}`;
         return res.status(200).json({ ok: true });
+      }
+      if (b.action === 'edit') {
+        const id = parseInt(b.id, 10);
+        if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid order' });
+        const cur = await sql`SELECT o.id, o.order_no, o.cancelled, COALESCE((SELECT SUM(i.qty) FROM ca_issues i WHERE i.order_id = o.id),0)::int AS issued FROM ca_orders o WHERE o.id = ${id}`;
+        if (!cur.length) return res.status(404).json({ error: 'Order not found' });
+        if (cur[0].cancelled) return res.status(409).json({ error: 'This order is cancelled' });
+        const customer = t(b.customer), stator = t(b.stator_type), winding = t(b.winding_type, 40), motor = t(b.motor_type, 40), rotor = t(b.rotor_item) || null, qty = Number(b.qty);
+        if (!customer) return res.status(400).json({ error: 'Enter the customer' });
+        if (!stator) return res.status(400).json({ error: 'Choose the stamping type' });
+        if (!winding) return res.status(400).json({ error: 'Choose the winding type' });
+        if (!motor) return res.status(400).json({ error: 'Choose the motor type' });
+        if (!Number.isInteger(qty) || qty <= 0 || qty > 10000000) return res.status(400).json({ error: 'Enter a whole quantity above 0' });
+        if (qty < cur[0].issued) return res.status(409).json({ error: 'Already issued ' + cur[0].issued + ' to contractors. Quantity cannot be below ' + cur[0].issued });
+        const due = /^\d{4}-\d{2}-\d{2}$/.test(b.due || '') ? b.due : null;
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+        const od = /^\d{4}-\d{2}-\d{2}$/.test(b.order_date || '') ? b.order_date : null;
+        if (od && od > today) return res.status(400).json({ error: 'Order date cannot be in the future' });
+        await sql`UPDATE ca_orders SET customer = ${customer}, stator_type = ${stator}, winding_type = ${winding}, motor_type = ${motor}, rotor_item = ${rotor}, qty = ${qty}, due = ${due}::date,
+            created_at = CASE WHEN ${od}::date IS NULL THEN created_at ELSE (${od}::date + (created_at AT TIME ZONE 'Asia/Kolkata')::time) AT TIME ZONE 'Asia/Kolkata' END
+          WHERE id = ${id}`;
+        return res.status(200).json({ ok: true, order_no: cur[0].order_no });
       }
       if (b.action !== 'add') return res.status(400).json({ error: 'Invalid action' });
       const customer = t(b.customer);
