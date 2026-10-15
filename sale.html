@@ -115,19 +115,51 @@ function form(){
 }
 function list(){
  setBar("");
- let h='<div class="tabs">'+[["all","All"],["open","Open"],["new","Waiting"]].map(t=>'<button data-t="'+t[0]+'" class="'+(ltab===t[0]?"on":"")+'">'+t[1]+'</button>').join("")+'</div>';
- const os=D.orders.filter(o=>ltab==="all"||(ltab==="new"?!o.issued&&!o.cancelled:(o.issued>0&&!o.cancelled)));
+ let h='<div class="tabs">'+[["all","All"],["open","Open"],["new","Waiting"],["closed","Closed"]].map(t=>'<button data-t="'+t[0]+'" class="'+(ltab===t[0]?"on":"")+'">'+t[1]+'</button>').join("")+'</div>';
+ const os=D.orders.filter(o=>ltab==="all"||(ltab==="new"?!o.issued&&!o.cancelled:(ltab==="closed"?o.closed&&!o.cancelled:(o.issued>0&&!o.closed&&!o.cancelled))));
  if(!os.length)h+='<div class="card sub" style="margin:0">No orders here.</div>';
  const line=o=>'<small>'+(o.created?dm(o.created)+' | ':'')+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.rotor_item?' | rotor '+esc(o.rotor_item):'')+(o.due?' | due '+dm(o.due):'')+'</small>';
  const grp=[];os.forEach(o=>{const g=grp[grp.length-1];if(g&&g[0].customer===o.customer&&g[0].created===o.created&&!o.cancelled&&!g[0].cancelled)g.push(o);else grp.push([o])});
  grp.forEach(g=>{
-  if(g.length===1){const o=g[0];h+='<div class="card"><div class="ord"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+(o.cancelled?' (cancelled)':'')+'</b>'+line(o)+'</div><div style="text-align:right"><b>'+fmt(o.qty)+'</b><small>'+(o.issued?fmt(o.issued)+' issued':'waiting')+'</small></div></div></div>'}
+  if(g.length===1){const o=g[0];h+='<div class="card"><div class="ord"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+(o.cancelled?' (cancelled)':'')+'</b>'+line(o)+'</div><div style="text-align:right"><b>'+fmt(o.qty)+'</b><small>'+(o.issued?fmt(o.issued)+' issued':'waiting')+'</small></div></div>'+(o.cancelled?'':'<div style="text-align:right;margin-top:6px"><button class="lnk g" data-ed="'+o.id+'">Edit</button></div>')+'</div>'}
   else{h+='<div class="card"><div class="ord"><div><b>'+esc(g[0].customer)+'</b><small>'+dm(g[0].created)+' | '+g.length+' orders | '+fmt(g.reduce((a,o)=>a+o.qty,0))+' total</small></div></div>'+
-   g.map((o,i)=>'<div class="row'+(i?'':' f')+'" style="margin-top:'+(i?0:8)+'px"><div><b>#'+esc(o.order_no)+'</b><small>'+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.rotor_item?' | rotor '+esc(o.rotor_item):'')+(o.due?' | due '+dm(o.due):'')+'</small></div><div style="text-align:right"><b>'+fmt(o.qty)+'</b><small>'+(o.issued?fmt(o.issued)+' issued':'waiting')+'</small></div></div>').join('')+'</div>'}
+   g.map((o,i)=>'<div class="row'+(i?'':' f')+'" style="margin-top:'+(i?0:8)+'px"><div><b>#'+esc(o.order_no)+'</b><small>'+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.rotor_item?' | rotor '+esc(o.rotor_item):'')+(o.due?' | due '+dm(o.due):'')+'</small></div><div style="text-align:right"><b>'+fmt(o.qty)+'</b><small>'+(o.issued?fmt(o.issued)+' issued':'waiting')+'</small>'+(o.cancelled?'':'<button class="lnk g" data-ed="'+o.id+'">Edit</button>')+'</div></div>').join('')+'</div>'}
  });
  $("main").innerHTML=h;
  document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{ltab=b.dataset.t;list()});
+ document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{const o=D.orders.find(x=>x.id===+b.dataset.ed);if(!o)return;EF={id:o.id,no:o.order_no,issued:o.issued||0,customer:o.customer||"",stator_type:o.stator_type||"",winding_type:o.winding_type||"",motor_type:o.motor_type||"",rotor_item:o.rotor_item||"",qty:o.qty,due:o.due||"",order_date:o.created||todayIST()};editForm()});
 }
+let EF=null;
+function grabE(){["customer","due","order_date"].forEach(k=>{if($("f_"+k))EF[k]=$("f_"+k).value});if($("f_qty"))EF.qty=$("f_qty").value}
+function editForm(){
+ const e=EF;
+ $("ttl").textContent="Edit order #"+e.no;
+ let h='<div style="margin-bottom:6px"><button class="lnk g" id="eb">&lsaquo; Back</button></div><div class="sub">All fields can be changed</div>';
+ h+='<div class="fl"><small>Customer</small><input class="f" id="f_customer" value="'+esc(e.customer)+'" placeholder="Customer name"></div>';
+ h+='<div class="card">'+pf("p_st","Stamping type",e.stator_type)+pf("p_wd","Winding type",e.winding_type)+pf("p_mt","Motor type",e.motor_type)+pf("p_ro","Rotor type (optional)",e.rotor_item,"None")+
+  '<div class="qty"><div class="lab">Quantity</div><input class="num" id="f_qty" type="number" inputmode="numeric" min="1" value="'+esc(e.qty)+'" placeholder="0"><div class="qs"><button data-a="100">+100</button><button data-a="500">+500</button><button data-a="1000">+1,000</button></div></div></div>';
+ h+='<div style="display:flex;gap:10px"><div class="fl" style="flex:1"><small>Due date (optional)</small><input class="f" id="f_due" type="date" value="'+esc(e.due)+'"></div><div class="fl" style="flex:1"><small>Order date</small><input class="f" id="f_order_date" type="date" max="'+todayIST()+'" value="'+esc(e.order_date)+'"></div></div>';
+ if(e.issued>0)h+='<div class="good">Already issued to contractors: '+fmt(e.issued)+' of '+fmt(e.qty)+'. Quantity cannot go below '+fmt(e.issued)+'.</div>';
+ $("main").innerHTML=h;
+ setBar('<button class="btn" id="go">Save changes</button>');
+ $("eb").onclick=()=>{$("ttl").textContent="Orders";EF=null;list()};
+ $("p_st").onclick=()=>{grabE();sheet("Stamping type",D.stamps,e.stator_type,v=>{e.stator_type=v;editForm()})};
+ $("p_wd").onclick=()=>{grabE();sheet("Winding type",D.winding,e.winding_type,v=>{e.winding_type=v;editForm()},"winding")};
+ $("p_mt").onclick=()=>{grabE();sheet("Motor type",D.motor,e.motor_type,v=>{e.motor_type=v;editForm()},"motor")};
+ $("p_ro").onclick=()=>{grabE();sheet("Rotor type",["(none)"].concat(D.rotors),e.rotor_item,v=>{e.rotor_item=v==="(none)"?"":v;editForm()})};
+ document.querySelectorAll(".qs button").forEach(b=>b.onclick=()=>{$("f_qty").value=(Number($("f_qty").value)||0)+Number(b.dataset.a)});
+ $("go").onclick=async()=>{grabE();$("err").textContent="";
+  const q=Number(e.qty);
+  if(!e.customer.trim()){$("err").textContent="Enter the customer";return}
+  if(!e.stator_type||!e.winding_type||!e.motor_type){$("err").textContent="Choose stamping, winding and motor type";return}
+  if(!(q>0)||q!==Math.floor(q)){$("err").textContent="Enter a whole quantity above 0";return}
+  if(q<e.issued){$("err").textContent="Already issued "+fmt(e.issued)+". Quantity cannot be below that";return}
+  $("go").disabled=true;
+  try{await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"edit",id:e.id,customer:e.customer,stator_type:e.stator_type,winding_type:e.winding_type,motor_type:e.motor_type,rotor_item:e.rotor_item,qty:q,due:e.due,order_date:e.order_date})});
+   toast("Saved order #"+e.no);EF=null;await load();$("ttl").textContent="Orders";list()}
+  catch(x){$("err").textContent=x.message;$("go").disabled=false}};
+}
+
 function status(){
  setBar("");
  let h='<div class="sub">The line stops at the current step. Date = day that step finished. Ready to dispatch is automatic when all motors are made (Pandey ji / Sunil entries).</div>';
