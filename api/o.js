@@ -70,15 +70,38 @@ export default async function handler(req, res) {
       if (r.kind === 'wound') { held[r.contractor] && (held[r.contractor].wound += r.q); add(r.contractor, r.stype, -r.q); }
       if (r.kind === 'transfer') { add(r.contractor, r.stype, -r.q); if (held[r.party]) { held[r.party].recv += r.q; add(r.party, r.stype, r.q); } if (held[r.contractor]) held[r.contractor].recv -= r.q; }
     });
-    let midlandError = null, rotorRows = [];
+    let midlandError = null, rotorRows = [], midRows = [];
     try {
       const m = await sql`SELECT t.party_name, t.quantity::float AS q, i.name AS item FROM inventory_transactions t JOIN inventory_items i ON i.id = t.item_id
         WHERE upper(t.transaction_type) = 'OUTWARD' AND i.category IN ('STAMPING','AIRY STAMPING') AND t.transaction_date >= ${START}::date`;
+      midRows = m;
       m.forEach(x => { const c = norm(x.party_name); if (c) { held[c].recv += x.q; add(c, x.item, x.q); } });
       rotorRows = await sql`SELECT i.name, COALESCE(i.opening_balance,0)::float
           + COALESCE(SUM(CASE WHEN upper(t.transaction_type) = 'INWARD' THEN t.quantity WHEN upper(t.transaction_type) = 'OUTWARD' THEN -t.quantity ELSE 0 END),0)::float AS stock
         FROM inventory_items i LEFT JOIN inventory_transactions t ON t.item_id = i.id WHERE i.category = 'ROTOR' GROUP BY i.id, i.name, i.opening_balance ORDER BY i.name`;
     } catch (e) { midlandError = String(e.message || e); }
+
+    // Stamping GIVEN per contractor + type (gross: Midland outward + manual receipts + transfers in - transfers out; wound is NOT subtracted)
+    const givenT = {};
+    const addG = (c, t, v) => { if (!c || !t) return; const k = c + '|' + K0(t); givenT[k] = (givenT[k] || 0) + v; };
+    function K0(t) { return String(t || '').trim().toUpperCase(); }
+    w.forEach(r => {
+      if (r.kind === 'stamp_in') addG(r.contractor, r.stype, r.q);
+      if (r.kind === 'transfer') { addG(r.contractor, r.stype, -r.q); addG(r.party, r.stype, r.q); }
+    });
+    midRows.forEach(x => { const c = norm(x.party_name); if (c) addG(c, x.item, x.q); });
+    // Stamping is not tied to orders, so share each contractor's given stamping of a type over their orders of that type, oldest order first, capped at the issued qty.
+    const pool = Object.assign({}, givenT);
+    orders.slice().reverse().forEach(o => {
+      o.stamp_rows = [];
+      issues.filter(i => i.order_id === o.id).slice().reverse().forEach(i => {
+        const k = i.contractor + '|' + K0(o.stator_type);
+        const take = Math.max(0, Math.min(i.qty, pool[k] || 0));
+        pool[k] = (pool[k] || 0) - take;
+        o.stamp_rows.push({ contractor: i.contractor, type: o.stator_type || '(no stamping)', given: take, issued: i.qty });
+      });
+      o.stamp_given = o.stamp_rows.reduce((a, r) => a + r.given, 0);
+    });
 
     // Rotor need per item = open order qty (not cancelled) that is not fully dispatched is unknown here, so use order qty not yet wound
     const need = {};
