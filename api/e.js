@@ -6,6 +6,7 @@ const START = '2026-10-01';
 const APP1 = ['stamp_in', 'wound', 'sent', 'transfer'];
 const APP2 = ['made', 'mdispatch', 'dispatch'];
 const todayIST = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const CONTRACTORS = ['Suman', 'Dinesh', 'Ajeet', 'Siraj', 'Sunil'];
 const nz = s => String(s == null ? '' : s).trim().toLowerCase();
 const fmt = n => Number(n).toLocaleString('en-IN');
 
@@ -77,10 +78,40 @@ export default async function handler(req, res) {
       if (q.type) out = out.filter(r => r.stype === q.type);
       if (/^\d{4}-\d{2}-\d{2}$/.test(q.from || '')) out = out.filter(r => r.d >= q.from);
       if (/^\d{4}-\d{2}-\d{2}$/.test(q.to || '')) out = out.filter(r => r.d <= q.to);
-      return res.status(200).json({ rows: out.slice(0, 200), people, types, total: out.length });
+      let mt = [];
+      try { mt = (await sql`SELECT DISTINCT name FROM inventory_items WHERE category IN ('STAMPING', 'AIRY STAMPING') ORDER BY name`).map(x => x.name); } catch (er) { /* Midland not readable */ }
+      const pickTypes = Array.from(new Set(mt.concat(types))).sort();
+      return res.status(200).json({ rows: out.slice(0, 200), people, types, total: out.length, pick: { contractors: CONTRACTORS, types: pickTypes } });
     }
     if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
     const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    if (b.action === 'add') {
+      // Admin add: only Made (wound) and Given to Pandey ji (sent). No motors, no stamping entries.
+      const kind = b.entry === 'made' ? 'wound' : (b.entry === 'given' ? 'sent' : null);
+      const who = String(b.contractor || '').trim(), stype = String(b.stype || '').trim().slice(0, 60);
+      const qty = Number(b.qty), d = String(b.d || '');
+      if (!kind) return res.status(400).json({ error: 'Choose entry type' });
+      if (!CONTRACTORS.includes(who)) return res.status(400).json({ error: 'Choose the contractor' });
+      if (!stype) return res.status(400).json({ error: 'Choose the winding type' });
+      if (!(qty > 0) || qty > 10000000 || qty !== Math.floor(qty)) return res.status(400).json({ error: 'Enter a whole number above 0' });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d < START) return res.status(400).json({ error: 'Date must be 1 Oct 2026 or later' });
+      if (d > todayIST()) return res.status(400).json({ error: 'Date cannot be in the future' });
+      try { await sql`SELECT 1 FROM wa_audit LIMIT 1`; } catch (er) { return res.status(500).json({ error: 'Audit table is missing. Run the audit SQL in Neon first. Nothing was changed.' }); }
+      const party = kind === 'sent' ? (who === 'Sunil' ? 'Sunil' : 'Pandey ji') : null;
+      const rows0 = await liveRows(sql);
+      const dup0 = rows0.find(r => r.kind === kind && nz(r.contractor) === nz(who) && nz(r.party) === nz(party) && nz(r.stype) === nz(stype) && r.qty === qty && r.d === d);
+      if (dup0) return res.status(409).json({ error: 'Same entry already exists on that date (#' + dup0.id + '). That would be a double entry.' });
+      const bad0 = violation(rows0, rows0.concat([{ id: -1, kind, contractor: who, party, stype, qty, d }]));
+      if (bad0) return res.status(409).json({ error: 'Not allowed: ' + bad0 });
+      const ins = await sql`INSERT INTO wa_entries (kind, contractor, party, stype, qty, d, note) VALUES (${kind}, ${who}, ${party}, ${stype}, ${qty}, ${d}::date, ${'added by admin'}) RETURNING id`;
+      try {
+        await sql`INSERT INTO wa_audit (entry_id, action, old_value, new_value, by_who) VALUES (${ins[0].id}, 'add', ${null}, ${JSON.stringify({ kind, contractor: who, party, stype, qty, d })}, 'Jatin (admin)')`;
+      } catch (er) {
+        await sql`UPDATE wa_entries SET deleted = true WHERE id = ${ins[0].id}`;
+        return res.status(500).json({ error: 'Could not write the audit log. Nothing was added.' });
+      }
+      return res.status(200).json({ ok: true, id: ins[0].id });
+    }
     const id = parseInt(b.id, 10);
     if (!id) return res.status(400).json({ error: 'Invalid id' });
     if (b.action !== 'edit' && b.action !== 'delete') return res.status(400).json({ error: 'Invalid action' });
