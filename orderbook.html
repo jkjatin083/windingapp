@@ -74,7 +74,8 @@ function book(){
  if(!list.length)h+='<div class="card mut">Nothing here.</div>';
  list.forEach(x=>{const o=x.o,left=o.qty-o.issued,mine=D.issues.filter(i=>i.order_id===o.id),used=mine.filter(i=>i.used);
   h+='<div class="card"><div class="ord"><div><b>#'+esc(o.order_no)+' '+esc(o.customer)+'</b><small>'+(o.created?dm(o.created)+' | ':'')+esc(o.stator_type)+' | '+esc(o.winding_type)+' | '+esc(o.motor_type)+(o.due?' | due '+dm(o.due):'')+'</small></div><span class="'+(isDone(x)?'tag g':(o.issued?'pill':'tag'))+'">'+(isDone(x)?'Done':(o.issued?'In progress':'New'))+'</span></div>'+
-   '<div style="margin-top:8px">'+bi('Issued to contractors',o.issued,o.qty)+bi('Stators wound',x.w,o.qty)+bi('Given to Pandey ji',x.g,o.qty)+'</div>'+
+   '<div style="margin-top:8px">'+bi('Stamping given',o.stamp_given||0,o.qty)+bi('Stators wound',x.w,o.qty)+bi('Given to Pandey ji',x.g,o.qty)+'</div>'+
+   ((o.stamp_rows||[]).length?'<div class="mut" style="margin-top:10px">Stamping given: '+o.stamp_rows.map(r=>esc(r.contractor)+' - '+esc(r.type)+' x '+fmt(r.given)+(r.given<r.issued?' (of '+fmt(r.issued)+')':'')).join(' | ')+'</div>':'')+
    (mine.length?'<div class="mut" style="margin-top:10px">'+mine.map(i=>esc(i.contractor)+' '+fmt(i.wound)+' / '+fmt(i.qty)+' wound'+(i.due?'':'')).join(' | ')+'</div>':'')+
    (used.length?'<div class="need"><span>Used a different stamping</span><span class="tag a">'+used.map(i=>esc(i.used)).join(', ')+'</span></div>':'')+
    (left>0?'<div class="need"><span>'+fmt(left)+' left to issue</span><button class="btn" data-i="'+o.id+'">Issue</button></div>':'')+'</div>'});
