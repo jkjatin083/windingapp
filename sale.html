@@ -47,7 +47,7 @@ nav a{text-align:center;font-size:11.5px;color:#98a2b3;font-weight:500;text-deco
 .opt{display:flex;justify-content:space-between;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);margin-bottom:8px;cursor:pointer;font-size:15px}.opt.on{border-color:var(--a);background:var(--a2);font-weight:700}
 label.l{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:14px 0 6px}
 
-.sg{position:absolute;left:0;right:0;top:100%;margin-top:-6px;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.12);z-index:5;overflow:hidden}.sg div{padding:12px 14px;font-size:15px;border-top:1px solid var(--line)}.sg div:first-child{border-top:0}.sg div small{display:inline;color:var(--mute);font-size:12px;margin:0 0 0 8px}.sg div:active{background:#f1f5f9}
+.sg{max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch;position:absolute;left:0;right:0;top:100%;margin-top:-6px;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.12);z-index:5;overflow:hidden}.sg div{padding:12px 14px;font-size:15px;border-top:1px solid var(--line)}.sg div:first-child{border-top:0}.sg div small{display:inline;color:var(--mute);font-size:12px;margin:0 0 0 8px}.sg div:active{background:#f1f5f9}
 </style></head><body><div class="w"><div id="toast"></div>
 <div class="top"><div class="who"><div class="av">S</div><div><small>Sale Orders</small><b id="who"></b></div></div><div><div class="chipd" id="dt"></div><a class="lo" href="#" id="lo">Log out</a></div></div>
 <h1 id="ttl">Overview</h1><div id="main"></div></div>
@@ -92,8 +92,8 @@ function custBox(){
  const inp=$("f_customer");if(!inp)return;const wrap=inp.parentNode;wrap.style.position="relative";
  const box=document.createElement("div");box.className="sg";box.style.display="none";wrap.appendChild(box);
  const all=custList();
- const show=()=>{const q=inp.value.trim().toLowerCase();if(!q){box.style.display="none";return}
-  const hit=all.filter(c=>c.toLowerCase().includes(q)&&c.toLowerCase()!==q).sort((a,b)=>(a.toLowerCase().startsWith(q)?0:1)-(b.toLowerCase().startsWith(q)?0:1)||a.localeCompare(b)).slice(0,6);
+ const show=()=>{const q=inp.value.trim().toLowerCase();
+  const hit=q?all.filter(c=>c.toLowerCase().includes(q)&&c.toLowerCase()!==q).sort((a,b)=>(a.toLowerCase().startsWith(q)?0:1)-(b.toLowerCase().startsWith(q)?0:1)||a.localeCompare(b)).slice(0,30):all.slice().sort((a,b)=>a.localeCompare(b));
   box.innerHTML=hit.map(c=>'<div data-c="'+esc(c)+'">'+esc(c)+'<small>existing</small></div>').join("");box.style.display=hit.length?"block":"none";
   box.querySelectorAll("div").forEach(d=>d.onmousedown=d.ontouchstart=e=>{e.preventDefault();inp.value=d.dataset.c;box.style.display="none"})};
  inp.addEventListener("input",show);inp.addEventListener("focus",show);
