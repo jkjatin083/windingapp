@@ -1,192 +1,211 @@
 import { neon } from '@neondatabase/serverless';
 import { verify } from './_auth.js';
 
+// Admin only: list, edit (quantity / date) and delete (soft) entries of all apps. No add.
 const START = '2026-10-01';
-// Contractors who use this page (App 1). Pandey ji uses App 2.
-const WHO = ['Suman', 'Dinesh', 'Ajeet', 'Siraj', 'Sunil'];
+const APP1 = ['stamp_in', 'wound', 'sent', 'transfer'];
+const APP2 = ['made', 'mdispatch', 'dispatch'];
+const todayIST = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const CONTRACTORS = ['Suman', 'Dinesh', 'Ajeet', 'Siraj', 'Sunil'];
+const nz = s => String(s == null ? '' : s).trim().toLowerCase();
+const fmt = n => Number(n).toLocaleString('en-IN');
 
-function todayIST() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-}
-function normParty(p) {
-  const k = String(p || '').toLowerCase().replace(/[^a-z]/g, '');
-  return WHO.find(c => c.toLowerCase() === k) || null;
-}
-
-// Per stamping type: made (wound) and given (sent) by this contractor
-async function holds(sql, me) {
-  const r = await sql`SELECT stype,
-      COALESCE(SUM(CASE WHEN kind = 'wound' THEN qty END),0)::float AS made,
-      COALESCE(SUM(CASE WHEN kind = 'sent' THEN qty END),0)::float AS given
-    FROM wa_entries WHERE deleted = false AND contractor = ${me} AND d >= ${START}::date AND kind IN ('wound','sent')
-    GROUP BY stype`;
-  const o = {};
-  r.forEach(x => { o[x.stype] = { made: x.made, given: x.given, held: x.made - x.given }; });
-  return o;
+function label(r) {
+  switch (r.kind) {
+    case 'wound': return 'Made (wound)';
+    case 'sent': return 'Given to ' + (r.party || '-');
+    case 'transfer': return 'Stamping given to ' + (r.party || '-');
+    case 'stamp_in': return 'Stamping received';
+    case 'made': return 'Motors made from ' + (r.party || '-');
+    case 'mdispatch': return 'Motors dispatched (' + (r.party || '-') + ')';
+    case 'dispatch': return 'Dispatch (old)';
+    default: return r.kind;
+  }
 }
 
-// Stamping with this contractor, per type: received (Midland OUTWARD to this contractor + manual receipts + transfers) minus stators made
-// One shared read of Midland stamping OUTWARD rows (used by both stampTypes and stampStock)
-async function midOut(sql) {
-  return await sql`SELECT t.party_name, t.quantity::float AS q, i.name AS item FROM inventory_transactions t JOIN inventory_items i ON i.id = t.item_id
-      WHERE upper(t.transaction_type) = 'OUTWARD' AND i.category IN ('STAMPING', 'AIRY STAMPING') AND t.transaction_date >= ${START}::date`;
-}
-async function stampStock(sql, me, mid) {
-  const o = {};
-  const g = t => o[t] || (o[t] = { recv: 0, made: 0, bal: 0 });
-  try {
-    const m = mid !== undefined ? await mid : await midOut(sql);
-    if (m) m.forEach(x => { if (normParty(x.party_name) === me) g(x.item).recv += x.q; });
-  } catch (e) { /* Midland not readable */ }
-  const w = await sql`SELECT kind, contractor, party, stype, qty::float AS q FROM wa_entries
-    WHERE deleted = false AND d >= ${START}::date AND stype IS NOT NULL
-      AND ((contractor = ${me} AND kind IN ('stamp_in','wound','transfer')) OR (party = ${me} AND kind = 'transfer'))`;
-  w.forEach(x => {
-    if (x.kind === 'stamp_in') g(x.stype).recv += x.q;
-    else if (x.kind === 'wound') g(x.stype).made += x.q;
-    else if (x.kind === 'transfer') { if (x.party === me) g(x.stype).recv += x.q; else g(x.stype).recv -= x.q; }
+// Balances that must never go below zero, computed from a list of live entries.
+function balances(rows) {
+  const out = {};
+  const add = (k, v, text) => { const o = out[k] || (out[k] = { v: 0, text }); o.v += v; };
+  rows.forEach(r => {
+    const q = Number(r.qty), t = r.stype || '-';
+    if (r.kind === 'wound') add('held|' + nz(r.contractor) + '|' + nz(t), q, r.contractor + ' would hold less than 0 of ' + t);
+    if (r.kind === 'sent') {
+      add('held|' + nz(r.contractor) + '|' + nz(t), -q, r.contractor + ' would hold less than 0 of ' + t);
+      if (r.party) add('wind|' + nz(r.party) + '|' + nz(r.contractor) + '|' + nz(t), q, r.party + ' would have less than 0 winding from ' + r.contractor + ' - ' + t + ' (already used for motors)');
+    }
+    if ((r.kind === 'made' || r.kind === 'dispatch') && r.party) {
+      add('wind|' + nz(r.contractor) + '|' + nz(r.party) + '|' + nz(t), -q, r.contractor + ' would have less than 0 winding from ' + r.party + ' - ' + t + ' (already used for motors)');
+      if (r.kind === 'made') add('hand|' + nz(r.contractor) + '|' + nz(r.party) + '|' + nz(t), q, r.contractor + ' would have motors dispatched that are more than made (' + r.party + ' - ' + t + ')');
+    }
+    if (r.kind === 'mdispatch' && r.party) add('hand|' + nz(r.contractor) + '|' + nz(r.party) + '|' + nz(t), -q, r.contractor + ' would have motors dispatched that are more than made (' + r.party + ' - ' + t + ')');
   });
-  Object.values(o).forEach(x => { x.bal = x.recv - x.made; });
-  return o;
+  return out;
+}
+// Block only if the change makes a balance negative AND worse than it was before (old data issues do not trap you).
+function violation(before, after) {
+  const B = balances(before), A = balances(after);
+  for (const k of Object.keys(A)) {
+    const b = B[k] ? B[k].v : 0;
+    if (A[k].v < -1e-9 && A[k].v < b - 1e-9) return A[k].text + ' (' + fmt(A[k].v) + ')';
+  }
+  return null;
 }
 
-// All stamping/winding names Midland has (for the "Show all winding" list on the Made screen)
-async function allTypes(sql) {
-  try {
-    const r = await sql`SELECT DISTINCT name FROM inventory_items WHERE category IN ('STAMPING', 'AIRY STAMPING') ORDER BY name`;
-    return r.map(x => x.name);
-  } catch (e) { return []; }
-}
-
-async function openIssues(sql, me) {
-  let rows = [];
-  try {
-    rows = await sql`SELECT i.id, i.qty::float AS qty, o.order_no, o.winding_type, o.motor_type, o.stator_type,
-        to_char(o.due, 'YYYY-MM-DD') AS due,
-        COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id
-                  WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'wound'),0)::float AS wound,
-        COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id
-                  WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'sent'),0)::float AS given
-      FROM ca_issues i JOIN ca_orders o ON o.id = i.order_id
-      WHERE i.contractor = ${me} AND i.closed = false ORDER BY i.id`;
-  } catch (e) { return { rows: [], err: String(e.message || e) }; }
-  return { rows: rows.map(r => ({ ...r, left: Math.max(0, r.qty - r.wound) })).filter(r => r.left > 0 || r.given < r.wound) };
-}
-
-async function stampTypes(sql, me, mid) {
-  const set = new Set();
-  const a = await sql`SELECT DISTINCT stype FROM wa_entries WHERE deleted = false AND contractor = ${me} AND stype IS NOT NULL AND kind IN ('wound','stamp_in','transfer','sent')`;
-  a.forEach(x => x.stype && set.add(x.stype));
-  try {
-    const m = mid !== undefined ? await mid : await midOut(sql);
-    if (m) m.forEach(x => { if (normParty(x.party_name) === me) set.add(x.item); });
-  } catch (e) { /* Midland not readable: use own entries only */ }
-  return [...set].sort();
+async function liveRows(sql) {
+  return await sql`SELECT id, kind, contractor, party, stype, qty::float AS qty, to_char(d, 'YYYY-MM-DD') AS d, note
+    FROM wa_entries WHERE deleted = false AND d >= ${START}::date ORDER BY d, id`;
 }
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  const me = verify(req);
-  if (!me || !WHO.includes(me)) return res.status(401).json({ error: 'Please log in' });
+  if (verify(req) !== 'ADMIN') return res.status(401).json({ error: 'Admin login needed' });
   try {
     const sql = neon(process.env.DATABASE_URL);
-    const today = todayIST();
     if (req.method === 'GET') {
-      const view = String(req.query.view || 'home');
-      if (view === 'home') {
-        const midP = midOut(sql).then(r => r, () => null);
-        const [iss, t, types, hold, stamp] = await Promise.all([
-          openIssues(sql, me),
-          sql`SELECT COALESCE(SUM(qty),0)::float AS v FROM wa_entries WHERE deleted = false AND contractor = ${me} AND kind = 'wound' AND d = ${today}::date`,
-          stampTypes(sql, me, midP),
-          holds(sql, me),
-          stampStock(sql, me, midP).catch(() => ({}))
-        ]);
-        return res.status(200).json({ me, today, types, holds: hold, stamp, issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v });
-      }
-      if (view === 'report') {
-        const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from || '') ? req.query.from : START;
-        const to = /^\d{4}-\d{2}-\d{2}$/.test(req.query.to || '') ? req.query.to : today;
-        let rows;
-        try {
-          rows = await sql`SELECT to_char(e.d,'YYYY-MM-DD') AS d, e.stype, COALESCE(m.winding_type,'-') AS wt, o.order_no,
-              COALESCE(SUM(CASE WHEN e.kind='wound' THEN e.qty END),0)::float AS made,
-              COALESCE(SUM(CASE WHEN e.kind='sent' THEN e.qty END),0)::float AS given
-            FROM wa_entries e LEFT JOIN ca_meta m ON m.entry_id = e.id
-              LEFT JOIN ca_issues i ON i.id = m.issue_id LEFT JOIN ca_orders o ON o.id = i.order_id
-            WHERE e.deleted = false AND e.contractor = ${me} AND e.kind IN ('wound','sent') AND e.d >= ${START}::date
-            GROUP BY e.d, e.stype, m.winding_type, o.order_no ORDER BY e.d, e.stype`;
-        } catch (e) {
-          rows = await sql`SELECT to_char(e.d,'YYYY-MM-DD') AS d, e.stype, '-' AS wt, NULL AS order_no,
-              COALESCE(SUM(CASE WHEN e.kind='wound' THEN e.qty END),0)::float AS made,
-              COALESCE(SUM(CASE WHEN e.kind='sent' THEN e.qty END),0)::float AS given
-            FROM wa_entries e WHERE e.deleted = false AND e.contractor = ${me} AND e.kind IN ('wound','sent') AND e.d >= ${START}::date
-            GROUP BY e.d, e.stype ORDER BY e.d, e.stype`;
-        }
-        // running held per stamping type, counted from START, then cut to the date range
-        const run = {};
-        const out = [];
-        for (const r of rows) {
-          run[r.stype] = (run[r.stype] || 0) + r.made - r.given;
-          if (r.d >= from && r.d <= to) out.push({ ...r, held: run[r.stype] });
-        }
-        const iss = await openIssues(sql, me);
-        let orders = [];
-        try {
-          orders = await sql`SELECT o.order_no, o.winding_type, o.stator_type, i.qty::float AS qty, to_char(o.due,'YYYY-MM-DD') AS due,
-              COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind='wound'),0)::float AS wound,
-              COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind='sent'),0)::float AS given
-            FROM ca_issues i JOIN ca_orders o ON o.id = i.order_id WHERE i.contractor = ${me} ORDER BY i.id DESC`;
-        } catch (e) { /* tables not created yet */ }
-        return res.status(200).json({ from, to, rows: out, orders, holds: await holds(sql, me), stamp: await stampStock(sql, me).catch(() => ({})), open: iss.rows.length });
-      }
-      return res.status(400).json({ error: 'Invalid view' });
+      const q = req.query || {};
+      const showDeleted = q.app === 'deleted';
+      const rows = await sql`SELECT e.id, e.kind, e.contractor, e.party, e.stype, e.qty::float AS qty, to_char(e.d, 'YYYY-MM-DD') AS d, e.note, e.deleted
+        FROM wa_entries e WHERE e.d >= ${START}::date AND e.deleted = ${showDeleted} ORDER BY e.d DESC, e.id DESC LIMIT 600`;
+      let kup = {};
+      try { (await sql`SELECT entry_id, kuppa_qty::float AS k FROM wa_dispatch_kuppa`).forEach(x => { kup[x.entry_id] = x.k; }); } catch (e) { /* table missing */ }
+      let out = rows.map(r => ({ ...r, text: label(r), kuppa: kup[r.id] || 0 }));
+      const people = Array.from(new Set(out.map(r => r.contractor).filter(Boolean))).sort();
+      const types = Array.from(new Set(out.map(r => r.stype).filter(Boolean))).sort();
+      if (q.app === 'contractors') out = out.filter(r => APP1.includes(r.kind));
+      if (q.app === 'motors') out = out.filter(r => APP2.includes(r.kind));
+      if (q.who) out = out.filter(r => r.contractor === q.who);
+      if (q.type) out = out.filter(r => r.stype === q.type);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(q.from || '')) out = out.filter(r => r.d >= q.from);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(q.to || '')) out = out.filter(r => r.d <= q.to);
+      let pickIssues = [], pickOpening = [];
+      try {
+        pickIssues = await sql`SELECT i.id, i.contractor, o.order_no, o.winding_type, o.stator_type,
+            (i.qty - COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'wound'),0))::float AS left
+          FROM ca_issues i JOIN ca_orders o ON o.id = i.order_id WHERE i.closed = false AND o.cancelled = false ORDER BY i.contractor, i.id`;
+        // stamping available (Midland + entries) and available stators per contractor and stamping, same maths as the contractor app
+        const live = await liveRows(sql);
+        let mid = [];
+        try { mid = await sql`SELECT t.party_name, t.quantity::float AS q, i.name AS item FROM inventory_transactions t JOIN inventory_items i ON i.id = t.item_id
+          WHERE upper(t.transaction_type) = 'OUTWARD' AND i.category IN ('STAMPING', 'AIRY STAMPING') AND t.transaction_date >= ${START}::date`; } catch (er) { /* Midland not readable */ }
+        const sb = {}, hd = {};
+        const key = (c, t) => nz(c) + '|' + nz(t);
+        mid.forEach(x => { const c = CONTRACTORS.find(n => nz(n) === String(x.party_name || '').toLowerCase().replace(/[^a-z]/g, '')); if (c) sb[key(c, x.item)] = (sb[key(c, x.item)] || 0) + x.q; });
+        live.forEach(r => {
+          if (!r.stype) return;
+          if (r.kind === 'stamp_in') sb[key(r.contractor, r.stype)] = (sb[key(r.contractor, r.stype)] || 0) + r.qty;
+          if (r.kind === 'wound') { sb[key(r.contractor, r.stype)] = (sb[key(r.contractor, r.stype)] || 0) - r.qty; hd[key(r.contractor, r.stype)] = (hd[key(r.contractor, r.stype)] || 0) + r.qty; }
+          if (r.kind === 'sent') hd[key(r.contractor, r.stype)] = (hd[key(r.contractor, r.stype)] || 0) - r.qty;
+          if (r.kind === 'transfer') { sb[key(r.contractor, r.stype)] = (sb[key(r.contractor, r.stype)] || 0) - r.qty; if (r.party) sb[key(r.party, r.stype)] = (sb[key(r.party, r.stype)] || 0) + r.qty; }
+        });
+        const nm = {}, hq = {};
+        live.forEach(r => { if (r.stype && (r.kind === 'wound' || r.kind === 'sent')) { nm[key(r.contractor, r.stype)] = [r.contractor, r.stype]; hq[key(r.contractor, r.stype)] = (hq[key(r.contractor, r.stype)] || 0) + (r.kind === 'wound' ? r.qty : -r.qty); } });
+        Object.keys(hq).forEach(k => {
+          const [c, t] = nm[k];
+          if (hq[k] > 0 && !pickIssues.some(i => i.contractor === c && i.left > 0 && nz(i.stator_type) === nz(t))) pickOpening.push({ contractor: c, name: t, avail: hq[k] });
+        });
+        pickIssues = pickIssues.map(i => ({ ...i, stamp: Math.max(0, sb[key(i.contractor, i.stator_type)] || 0), avail: Math.max(0, hd[key(i.contractor, i.stator_type)] || 0) }));
+      } catch (er) { /* order tables missing */ }
+      return res.status(200).json({ rows: out.slice(0, 200), people, types, total: out.length, pick: { contractors: CONTRACTORS, issues: pickIssues, opening: pickOpening.sort((a, b) => a.name.localeCompare(b.name)) } });
     }
-    if (req.method === 'POST') {
-      const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-      const kind = b.action === 'give' ? 'sent' : (b.action === 'made' ? 'wound' : null);
-      if (!kind) return res.status(400).json({ error: 'Invalid action' });
-      const qty = Number(b.qty);
-      let stype = String(b.stype || '').trim().slice(0, 60);
-      if (!Number.isInteger(qty) || qty <= 0 || qty > 1000000) return res.status(400).json({ error: 'Enter a whole number above 0' });
-      // winding type from the order issued by Sandeep
-      const iss = await openIssues(sql, me);
-      let issue = null;
-      const opening = kind === 'wound' && b.opening;
-      if (opening) {
-        // opening stock: no order, winding already held under this stamping name
-        const hh = (await holds(sql, me))[stype];
-        if (!stype || !hh) return res.status(400).json({ error: 'Choose the opening stock item' });
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+    const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    if (b.action === 'add') {
+      // Admin add: only Made (wound) and Given to Pandey ji (sent). No motors, no stamping entries.
+      const kind = b.entry === 'made' ? 'wound' : (b.entry === 'given' ? 'sent' : null);
+      const who = String(b.contractor || '').trim();
+      let stype = '';
+      const qty = Number(b.qty), d = String(b.d || '');
+      if (!kind) return res.status(400).json({ error: 'Choose entry type' });
+      if (!CONTRACTORS.includes(who)) return res.status(400).json({ error: 'Choose the contractor' });
+      const openName = String(b.opening_name || '').trim().slice(0, 60);
+      let isu = [];
+      if (openName) {
+        // opening stock: stamping name the contractor already holds stators of, no order link
+        const held = (await liveRows(sql)).filter(r => nz(r.contractor) === nz(who) && nz(r.stype) === nz(openName) && (r.kind === 'wound' || r.kind === 'sent'));
+        if (!held.length) return res.status(400).json({ error: 'Choose the opening stock item of this contractor' });
+        stype = held[0].stype;
+      } else {
+        isu = await sql`SELECT i.id, i.qty::float AS iq, o.stator_type, o.winding_type,
+            COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'wound'),0)::float AS wound
+          FROM ca_issues i JOIN ca_orders o ON o.id = i.order_id WHERE i.id = ${parseInt(b.issue_id, 10) || 0} AND i.contractor = ${who} AND i.closed = false AND o.cancelled = false`;
+        if (!isu.length) return res.status(400).json({ error: 'Choose the winding (order) of this contractor' });
+        stype = isu[0].stator_type || '';
+        if (!stype) return res.status(400).json({ error: 'This order has no stamping type' });
       }
-      if (iss.rows.length && !opening) {
-        const id = parseInt(b.issue_id, 10);
-        issue = iss.rows.find(x => x.id === id) || (iss.rows.length === 1 ? iss.rows[0] : null);
-        if (!issue) return res.status(400).json({ error: 'Choose the order' });
-        if (kind === 'wound' && qty > issue.left) return res.status(409).json({ error: 'Only ' + issue.left + ' left in order ' + issue.order_no });
+      if (!(qty > 0) || qty > 10000000 || qty !== Math.floor(qty)) return res.status(400).json({ error: 'Enter a whole number above 0' });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d < START) return res.status(400).json({ error: 'Date must be 1 Oct 2026 or later' });
+      if (d > todayIST()) return res.status(400).json({ error: 'Date cannot be in the future' });
+      try { await sql`SELECT 1 FROM wa_audit LIMIT 1`; } catch (er) { return res.status(500).json({ error: 'Audit table is missing. Run the audit SQL in Neon first. Nothing was changed.' }); }
+      const party = kind === 'sent' ? (who === 'Sunil' ? 'Sunil' : 'Pandey ji') : null;
+      const rows0 = await liveRows(sql);
+      const dup0 = rows0.find(r => r.kind === kind && nz(r.contractor) === nz(who) && nz(r.party) === nz(party) && nz(r.stype) === nz(stype) && r.qty === qty && r.d === d);
+      if (dup0) return res.status(409).json({ error: 'Same entry already exists on that date (#' + dup0.id + '). That would be a double entry.' });
+      if (isu.length && kind === 'wound' && isu[0].wound + qty > isu[0].iq) return res.status(409).json({ error: 'Only ' + fmt(isu[0].iq - isu[0].wound) + ' left in this order' });
+      const bad0 = violation(rows0, rows0.concat([{ id: -1, kind, contractor: who, party, stype, qty, d }]));
+      if (bad0) return res.status(409).json({ error: 'Not allowed: ' + bad0 });
+      const ins = await sql`INSERT INTO wa_entries (kind, contractor, party, stype, qty, d, note) VALUES (${kind}, ${who}, ${party}, ${stype}, ${qty}, ${d}::date, ${'added by admin'}) RETURNING id`;
+      try {
+        if (isu.length) await sql`INSERT INTO ca_meta (entry_id, issue_id, winding_type) VALUES (${ins[0].id}, ${isu[0].id}, ${isu[0].winding_type})`;
+        await sql`INSERT INTO wa_audit (entry_id, action, old_value, new_value, by_who) VALUES (${ins[0].id}, 'add', ${null}, ${JSON.stringify({ kind, contractor: who, party, stype, qty, d, issue_id: isu.length ? isu[0].id : null, opening: !!openName })}, 'Jatin (admin)')`;
+      } catch (er) {
+        await sql`UPDATE wa_entries SET deleted = true WHERE id = ${ins[0].id}`;
+        return res.status(500).json({ error: 'Could not save the order link or audit log. Nothing was added.' });
       }
-      if (kind === 'wound' && issue && issue.stator_type && !opening) stype = issue.stator_type;
-      if (!stype) return res.status(400).json({ error: kind === 'wound' ? 'No order issued' : 'Choose the stamping type' });
-      if (kind === 'sent') {
-        const h = (await holds(sql, me))[stype] || { held: 0 };
-        if (qty > h.held) return res.status(409).json({ error: 'You hold only ' + h.held + ' of ' + stype + '. Cannot give ' + qty });
-      }
-      const dup = await sql`SELECT id FROM wa_entries WHERE deleted = false AND kind = ${kind} AND contractor = ${me}
-        AND d = ${today}::date AND stype = ${stype} AND qty = ${qty} LIMIT 1`;
-      if (dup.length) return res.status(409).json({ error: 'Same entry is already saved today. Ask Jatin to edit it, or enter a different number.' });
-      const party = kind === 'sent' ? (me === 'Sunil' ? 'Sunil' : 'Pandey ji') : null;
-      const r = await sql`INSERT INTO wa_entries (kind, contractor, party, stype, qty, d, note)
-        VALUES (${kind}, ${me}, ${party}, ${stype}, ${qty}, ${today}::date, ${'via contractor app'}) RETURNING id`;
-      if (issue) {
-        try {
-          await sql`INSERT INTO ca_meta (entry_id, issue_id, winding_type) VALUES (${r[0].id}, ${issue.id}, ${issue.winding_type})`;
-        } catch (e) {
-          await sql`UPDATE wa_entries SET deleted = true WHERE id = ${r[0].id}`;
-          return res.status(500).json({ error: 'Could not save the order link: ' + String(e.message || e) });
-        }
-      }
-      return res.status(200).json({ ok: true, id: r[0].id });
+      return res.status(200).json({ ok: true, id: ins[0].id });
     }
-    return res.status(405).json({ error: 'method' });
+    const id = parseInt(b.id, 10);
+    if (!id) return res.status(400).json({ error: 'Invalid id' });
+    if (b.action !== 'edit' && b.action !== 'delete') return res.status(400).json({ error: 'Invalid action' });
+
+    // the audit table must exist before anything is changed
+    try { await sql`SELECT 1 FROM wa_audit LIMIT 1`; } catch (e) { return res.status(500).json({ error: 'Audit table is missing. Run the audit SQL in Neon first. Nothing was changed.' }); }
+
+    const all = await liveRows(sql);
+    const cur = all.find(r => r.id === id);
+    if (!cur) return res.status(404).json({ error: 'Entry not found (already deleted?)' });
+    let after, newQty = cur.qty, newD = cur.d;
+
+    if (b.action === 'edit') {
+      newQty = Number(b.qty); newD = String(b.d || cur.d);
+      if (!(newQty > 0) || newQty > 10000000 || newQty !== Math.floor(newQty)) return res.status(400).json({ error: 'Enter a whole number above 0' });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(newD) || newD < START) return res.status(400).json({ error: 'Date must be 1 Oct 2026 or later' });
+      if (newD > todayIST()) return res.status(400).json({ error: 'Date cannot be in the future' });
+      if (newQty === cur.qty && newD === cur.d) return res.status(400).json({ error: 'Nothing changed' });
+      if ((cur.kind === 'made' || cur.kind === 'dispatch') && newQty > cur.qty) return res.status(409).json({ error: 'Motors made cannot be increased here, because bush, capacitor and cover stock is not rechecked. Delete this entry and ask the contractor to enter it again.' });
+      if (cur.kind === 'made') {
+        try {
+          const k = await sql`SELECT kuppa_qty::float AS k FROM wa_dispatch_kuppa WHERE entry_id = ${id}`;
+          if (k.length && k[0].k > newQty) return res.status(409).json({ error: 'Motors with kuppa (' + fmt(k[0].k) + ') cannot be more than motors made' });
+        } catch (e) { /* no kuppa table */ }
+      }
+      const dup = all.find(r => r.id !== id && r.kind === cur.kind && nz(r.contractor) === nz(cur.contractor) && nz(r.party) === nz(cur.party) && nz(r.stype) === nz(cur.stype) && r.qty === newQty && r.d === newD);
+      if (dup) return res.status(409).json({ error: 'Same entry already exists on that date (#' + dup.id + '). That would be a double entry.' });
+      if (cur.kind === 'wound') {
+        try {
+          const iss = await sql`SELECT i.id, i.qty::float AS qty FROM ca_meta m JOIN ca_issues i ON i.id = m.issue_id WHERE m.entry_id = ${id}`;
+          if (iss.length) {
+            const o = await sql`SELECT COALESCE(SUM(e.qty),0)::float AS v FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = ${iss[0].id} AND e.deleted = false AND e.kind = 'wound' AND e.id <> ${id}`;
+            if (o[0].v + newQty > iss[0].qty) return res.status(409).json({ error: 'This is more than the order quantity issued to this contractor (' + fmt(iss[0].qty) + ')' });
+          }
+        } catch (e) { /* order tables missing */ }
+      }
+      after = all.map(r => r.id === id ? { ...r, qty: newQty, d: newD } : r);
+    } else {
+      after = all.filter(r => r.id !== id);
+    }
+    const bad = violation(all, after);
+    if (bad) return res.status(409).json({ error: 'Not allowed: ' + bad });
+
+    const oldV = { qty: cur.qty, d: cur.d, kind: cur.kind, contractor: cur.contractor, party: cur.party, stype: cur.stype };
+    const newV = b.action === 'edit' ? { qty: newQty, d: newD } : { deleted: true };
+    await sql`INSERT INTO wa_audit (entry_id, action, old_value, new_value, by_who) VALUES (${id}, ${b.action}, ${JSON.stringify(oldV)}, ${JSON.stringify(newV)}, 'Jatin (admin)')`;
+    if (b.action === 'edit') {
+      await sql`UPDATE wa_entries SET qty = ${newQty}, d = ${newD}::date WHERE id = ${id} AND deleted = false`;
+    } else {
+      await sql`UPDATE wa_entries SET deleted = true WHERE id = ${id} AND deleted = false`;
+    }
+    return res.status(200).json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: String(e.message || e) });
   }
