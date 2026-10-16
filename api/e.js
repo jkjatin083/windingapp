@@ -78,21 +78,61 @@ export default async function handler(req, res) {
       if (q.type) out = out.filter(r => r.stype === q.type);
       if (/^\d{4}-\d{2}-\d{2}$/.test(q.from || '')) out = out.filter(r => r.d >= q.from);
       if (/^\d{4}-\d{2}-\d{2}$/.test(q.to || '')) out = out.filter(r => r.d <= q.to);
-      let mt = [];
-      try { mt = (await sql`SELECT DISTINCT name FROM inventory_items WHERE category IN ('STAMPING', 'AIRY STAMPING') ORDER BY name`).map(x => x.name); } catch (er) { /* Midland not readable */ }
-      const pickTypes = Array.from(new Set(mt.concat(types))).sort();
-      return res.status(200).json({ rows: out.slice(0, 200), people, types, total: out.length, pick: { contractors: CONTRACTORS, types: pickTypes } });
+      let pickIssues = [], pickOpening = [];
+      try {
+        pickIssues = await sql`SELECT i.id, i.contractor, o.order_no, o.winding_type, o.stator_type,
+            (i.qty - COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'wound'),0))::float AS left
+          FROM ca_issues i JOIN ca_orders o ON o.id = i.order_id WHERE i.closed = false AND o.cancelled = false ORDER BY i.contractor, i.id`;
+        // stamping available (Midland + entries) and available stators per contractor and stamping, same maths as the contractor app
+        const live = await liveRows(sql);
+        let mid = [];
+        try { mid = await sql`SELECT t.party_name, t.quantity::float AS q, i.name AS item FROM inventory_transactions t JOIN inventory_items i ON i.id = t.item_id
+          WHERE upper(t.transaction_type) = 'OUTWARD' AND i.category IN ('STAMPING', 'AIRY STAMPING') AND t.transaction_date >= ${START}::date`; } catch (er) { /* Midland not readable */ }
+        const sb = {}, hd = {};
+        const key = (c, t) => nz(c) + '|' + nz(t);
+        mid.forEach(x => { const c = CONTRACTORS.find(n => nz(n) === String(x.party_name || '').toLowerCase().replace(/[^a-z]/g, '')); if (c) sb[key(c, x.item)] = (sb[key(c, x.item)] || 0) + x.q; });
+        live.forEach(r => {
+          if (!r.stype) return;
+          if (r.kind === 'stamp_in') sb[key(r.contractor, r.stype)] = (sb[key(r.contractor, r.stype)] || 0) + r.qty;
+          if (r.kind === 'wound') { sb[key(r.contractor, r.stype)] = (sb[key(r.contractor, r.stype)] || 0) - r.qty; hd[key(r.contractor, r.stype)] = (hd[key(r.contractor, r.stype)] || 0) + r.qty; }
+          if (r.kind === 'sent') hd[key(r.contractor, r.stype)] = (hd[key(r.contractor, r.stype)] || 0) - r.qty;
+          if (r.kind === 'transfer') { sb[key(r.contractor, r.stype)] = (sb[key(r.contractor, r.stype)] || 0) - r.qty; if (r.party) sb[key(r.party, r.stype)] = (sb[key(r.party, r.stype)] || 0) + r.qty; }
+        });
+        const nm = {}, hq = {};
+        live.forEach(r => { if (r.stype && (r.kind === 'wound' || r.kind === 'sent')) { nm[key(r.contractor, r.stype)] = [r.contractor, r.stype]; hq[key(r.contractor, r.stype)] = (hq[key(r.contractor, r.stype)] || 0) + (r.kind === 'wound' ? r.qty : -r.qty); } });
+        Object.keys(hq).forEach(k => {
+          const [c, t] = nm[k];
+          if (hq[k] > 0 && !pickIssues.some(i => i.contractor === c && i.left > 0 && nz(i.stator_type) === nz(t))) pickOpening.push({ contractor: c, name: t, avail: hq[k] });
+        });
+        pickIssues = pickIssues.map(i => ({ ...i, stamp: Math.max(0, sb[key(i.contractor, i.stator_type)] || 0), avail: Math.max(0, hd[key(i.contractor, i.stator_type)] || 0) }));
+      } catch (er) { /* order tables missing */ }
+      return res.status(200).json({ rows: out.slice(0, 200), people, types, total: out.length, pick: { contractors: CONTRACTORS, issues: pickIssues, opening: pickOpening.sort((a, b) => a.name.localeCompare(b.name)) } });
     }
     if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
     const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     if (b.action === 'add') {
       // Admin add: only Made (wound) and Given to Pandey ji (sent). No motors, no stamping entries.
       const kind = b.entry === 'made' ? 'wound' : (b.entry === 'given' ? 'sent' : null);
-      const who = String(b.contractor || '').trim(), stype = String(b.stype || '').trim().slice(0, 60);
+      const who = String(b.contractor || '').trim();
+      let stype = '';
       const qty = Number(b.qty), d = String(b.d || '');
       if (!kind) return res.status(400).json({ error: 'Choose entry type' });
       if (!CONTRACTORS.includes(who)) return res.status(400).json({ error: 'Choose the contractor' });
-      if (!stype) return res.status(400).json({ error: 'Choose the winding type' });
+      const openName = String(b.opening_name || '').trim().slice(0, 60);
+      let isu = [];
+      if (openName) {
+        // opening stock: stamping name the contractor already holds stators of, no order link
+        const held = (await liveRows(sql)).filter(r => nz(r.contractor) === nz(who) && nz(r.stype) === nz(openName) && (r.kind === 'wound' || r.kind === 'sent'));
+        if (!held.length) return res.status(400).json({ error: 'Choose the opening stock item of this contractor' });
+        stype = held[0].stype;
+      } else {
+        isu = await sql`SELECT i.id, i.qty::float AS iq, o.stator_type, o.winding_type,
+            COALESCE((SELECT SUM(e.qty) FROM ca_meta m JOIN wa_entries e ON e.id = m.entry_id WHERE m.issue_id = i.id AND e.deleted = false AND e.kind = 'wound'),0)::float AS wound
+          FROM ca_issues i JOIN ca_orders o ON o.id = i.order_id WHERE i.id = ${parseInt(b.issue_id, 10) || 0} AND i.contractor = ${who} AND i.closed = false AND o.cancelled = false`;
+        if (!isu.length) return res.status(400).json({ error: 'Choose the winding (order) of this contractor' });
+        stype = isu[0].stator_type || '';
+        if (!stype) return res.status(400).json({ error: 'This order has no stamping type' });
+      }
       if (!(qty > 0) || qty > 10000000 || qty !== Math.floor(qty)) return res.status(400).json({ error: 'Enter a whole number above 0' });
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d < START) return res.status(400).json({ error: 'Date must be 1 Oct 2026 or later' });
       if (d > todayIST()) return res.status(400).json({ error: 'Date cannot be in the future' });
@@ -101,14 +141,16 @@ export default async function handler(req, res) {
       const rows0 = await liveRows(sql);
       const dup0 = rows0.find(r => r.kind === kind && nz(r.contractor) === nz(who) && nz(r.party) === nz(party) && nz(r.stype) === nz(stype) && r.qty === qty && r.d === d);
       if (dup0) return res.status(409).json({ error: 'Same entry already exists on that date (#' + dup0.id + '). That would be a double entry.' });
+      if (isu.length && kind === 'wound' && isu[0].wound + qty > isu[0].iq) return res.status(409).json({ error: 'Only ' + fmt(isu[0].iq - isu[0].wound) + ' left in this order' });
       const bad0 = violation(rows0, rows0.concat([{ id: -1, kind, contractor: who, party, stype, qty, d }]));
       if (bad0) return res.status(409).json({ error: 'Not allowed: ' + bad0 });
       const ins = await sql`INSERT INTO wa_entries (kind, contractor, party, stype, qty, d, note) VALUES (${kind}, ${who}, ${party}, ${stype}, ${qty}, ${d}::date, ${'added by admin'}) RETURNING id`;
       try {
-        await sql`INSERT INTO wa_audit (entry_id, action, old_value, new_value, by_who) VALUES (${ins[0].id}, 'add', ${null}, ${JSON.stringify({ kind, contractor: who, party, stype, qty, d })}, 'Jatin (admin)')`;
+        if (isu.length) await sql`INSERT INTO ca_meta (entry_id, issue_id, winding_type) VALUES (${ins[0].id}, ${isu[0].id}, ${isu[0].winding_type})`;
+        await sql`INSERT INTO wa_audit (entry_id, action, old_value, new_value, by_who) VALUES (${ins[0].id}, 'add', ${null}, ${JSON.stringify({ kind, contractor: who, party, stype, qty, d, issue_id: isu.length ? isu[0].id : null, opening: !!openName })}, 'Jatin (admin)')`;
       } catch (er) {
         await sql`UPDATE wa_entries SET deleted = true WHERE id = ${ins[0].id}`;
-        return res.status(500).json({ error: 'Could not write the audit log. Nothing was added.' });
+        return res.status(500).json({ error: 'Could not save the order link or audit log. Nothing was added.' });
       }
       return res.status(200).json({ ok: true, id: ins[0].id });
     }
