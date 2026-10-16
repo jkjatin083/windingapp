@@ -95,15 +95,14 @@ export default async function handler(req, res) {
       const view = String(req.query.view || 'home');
       if (view === 'home') {
         const midP = midOut(sql).then(r => r, () => null);
-        const [iss, t, types, hold, stamp, all] = await Promise.all([
+        const [iss, t, types, hold, stamp] = await Promise.all([
           openIssues(sql, me),
           sql`SELECT COALESCE(SUM(qty),0)::float AS v FROM wa_entries WHERE deleted = false AND contractor = ${me} AND kind = 'wound' AND d = ${today}::date`,
           stampTypes(sql, me, midP),
           holds(sql, me),
-          stampStock(sql, me, midP).catch(() => ({})),
-          allTypes(sql)
+          stampStock(sql, me, midP).catch(() => ({}))
         ]);
-        return res.status(200).json({ me, today, types, holds: hold, stamp, issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v, allTypes: all });
+        return res.status(200).json({ me, today, types, holds: hold, stamp, issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v });
       }
       if (view === 'report') {
         const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from || '') ? req.query.from : START;
@@ -148,18 +147,25 @@ export default async function handler(req, res) {
       const kind = b.action === 'give' ? 'sent' : (b.action === 'made' ? 'wound' : null);
       if (!kind) return res.status(400).json({ error: 'Invalid action' });
       const qty = Number(b.qty);
-      const stype = String(b.stype || '').trim().slice(0, 60);
+      let stype = String(b.stype || '').trim().slice(0, 60);
       if (!Number.isInteger(qty) || qty <= 0 || qty > 1000000) return res.status(400).json({ error: 'Enter a whole number above 0' });
-      if (!stype) return res.status(400).json({ error: 'Choose the stamping type' });
       // winding type from the order issued by Sandeep
       const iss = await openIssues(sql, me);
       let issue = null;
-      if (iss.rows.length) {
+      const opening = kind === 'wound' && b.opening;
+      if (opening) {
+        // opening stock: no order, winding already held under this stamping name
+        const hh = (await holds(sql, me))[stype];
+        if (!stype || !hh) return res.status(400).json({ error: 'Choose the opening stock item' });
+      }
+      if (iss.rows.length && !opening) {
         const id = parseInt(b.issue_id, 10);
         issue = iss.rows.find(x => x.id === id) || (iss.rows.length === 1 ? iss.rows[0] : null);
         if (!issue) return res.status(400).json({ error: 'Choose the order' });
         if (kind === 'wound' && qty > issue.left) return res.status(409).json({ error: 'Only ' + issue.left + ' left in order ' + issue.order_no });
       }
+      if (kind === 'wound' && issue && issue.stator_type && !opening) stype = issue.stator_type;
+      if (!stype) return res.status(400).json({ error: kind === 'wound' ? 'No order issued' : 'Choose the stamping type' });
       if (kind === 'sent') {
         const h = (await holds(sql, me))[stype] || { held: 0 };
         if (qty > h.held) return res.status(409).json({ error: 'You hold only ' + h.held + ' of ' + stype + '. Cannot give ' + qty });
