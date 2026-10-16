@@ -69,7 +69,7 @@ async function api(url,opt){opt=opt||{};opt.headers=Object.assign({},opt.headers
  const j=await r.json();if(!r.ok)throw new Error(j.error||'error');return j}
 $('lo').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');localStorage.removeItem('wa_home');location.href='index.html'};
 $('av').textContent=(ME||'?')[0];$('who').textContent=ME;
-let showAll=false,H=null,sel={stype:null,issue:null},rtab='date';
+let showAll=false,H=null,sel={stype:null,issue:null,open:null},rtab='date';
 function applyHome(j){H=j;
  $('dt').textContent=dm(H.today);
  if(!sel.stype||!H.types.includes(sel.stype))sel.stype=H.types[0]||null;
@@ -82,37 +82,45 @@ function orderCard(od){
  return '<div class="card"><div class="lab">Order</div><div class="ord"><div><b>#'+esc(od.order_no)+'</b><small>'+esc(od.winding_type)+'</small></div><span class="pill">'+fmt(od.left)+' left</span></div><div class="bar"><i style="width:'+pc+'%"></i></div><div class="bl"><span>'+fmt(od.wound)+' wound</span><span>'+fmt(od.qty)+'</span></div>'+(od.stator_type?'<div class="need"><span>Order stamping</span><b>'+esc(od.stator_type)+'</b></div>':'')+'</div>'}
 function entryForm(kind){
  const give=kind==='give';
- const od=H.issues.find(x=>x.id===sel.issue)||H.issues[0]||null;
+ const mi=give?[]:H.issues.filter(i=>i.left>0);
+ const oth=give?[]:Object.keys(H.holds||{}).filter(k=>(H.holds[k].held||0)>0&&!mi.some(i=>i.stator_type===k)).sort().map(k=>[k,H.holds[k].held]);
+ if(!give){if(sel.open&&!oth.find(o=>o[0]===sel.open))sel.open=null;if(!sel.open&&!mi.find(i=>i.id===sel.issue)){if(mi.length)sel.issue=mi[0].id;else if(oth.length)sel.open=oth[0][0]}}
+ const od=give?(H.issues.find(x=>x.id===sel.issue)||H.issues[0]||null):(sel.open?null:(mi.find(x=>x.id===sel.issue)||mi[0]||null));
  let h='<h1>'+(give?'Give to '+esc(NEXT):'Made today')+'</h1>';
- if(H.issues.length>1)h+='<div class="oc" id="is">'+H.issues.map(i=>'<button data-v="'+i.id+'" class="'+(i.id===sel.issue?'on':'')+'">#'+esc(i.order_no)+' | '+esc(i.winding_type)+'</button>').join('')+'</div>';
- h+=orderCard(od);
+ if(give&&H.issues.length>1)h+='<div class="oc" id="is">'+H.issues.map(i=>'<button data-v="'+i.id+'" class="'+(i.id===sel.issue?'on':'')+'">#'+esc(i.order_no)+' | '+esc(i.winding_type)+'</button>').join('')+'</div>';
+ if(give||!sel.open)h+=orderCard(od);
+ if(give){
  const bal=t=>give?((H.holds[t]||{held:0}).held):((H.stamp[t]||{bal:0}).bal);
  const names=Array.from(new Set(Object.keys(H.stamp||{}).concat(give?Object.keys(H.holds||{}):(H.types||[])).concat(!give&&showAll?(H.allTypes||[]):[]).concat(od&&od.stator_type?[od.stator_type]:[])));
  const opts=names.map(t=>[t,bal(t)]).sort((x,y)=>give?(y[1]-x[1]||x[0].localeCompare(y[0])):x[0].localeCompare(y[0]));
  if(!give&&(!sel.stype||!names.includes(sel.stype))){sel.stype=od&&od.stator_type?od.stator_type:(opts[0]||[null])[0]}
  if(give&&(!sel.stype||bal(sel.stype)<=0)){const okk=od&&od.stator_type&&bal(od.stator_type)>0?od.stator_type:(opts.find(o=>o[1]>0)||[null])[0];sel.stype=okk}
- h+='<div class="card"><div class="lab">'+(give?'Stators you hold, by stamping':'Winding used')+'</div>';
+ h+='<div class="card"><div class="lab">'+'Stators you hold, by stamping'+'</div>';
  h+=opts.length?'<div id="st">'+opts.map(o=>'<div class="tile'+(o[0]===sel.stype?' on':'')+(give&&o[1]<=0?' dim':'')+'" data-v="'+esc(o[0])+'"><span class="r"></span><div class="t"><b>'+esc(o[0])+'</b>'+(give?'<small>'+(o[1]>0?'ready to give':'none with you')+'</small></div><span class="n">'+fmt(Math.max(0,o[1]))+'</span></div>':'<small style="font-size:10px;color:#98a2b3">stamping available '+fmt(Math.max(0,o[1]))+'</small></div><span class="n" style="color:#0e9f83;font-weight:700">'+fmt(Math.max(0,(H.holds[o[0]]||{held:0}).held))+'</span></div>')).join('')+'</div>':'<div class="note">No winding types yet.</div>';
  if(!give&&!showAll&&(H.allTypes||[]).length>names.length)h+='<div class="note" id="sa" style="text-align:center;color:var(--a);font-weight:600;cursor:pointer;margin-top:10px">Show all winding</div>';
  h+='</div>';
- if(!give&&od&&od.stator_type&&sel.stype&&sel.stype!==od.stator_type)h+='<div class="warn"><b>Different from order.</b> Using '+esc(sel.stype)+' for an order of '+esc(od.stator_type)+'. This is saved with the entry so Jatin can see it.</div>';
- const hold=(H.holds[sel.stype]||{held:0}).held,mx=give?hold:((H.stamp[sel.stype]||{bal:0}).bal);
+ } else{
+ if(!mi.length&&!oth.length){h+='<div class="card"><div class="lab">Stators</div><div class="note">No order issued</div></div>';sel.stype=null}
+ else{
+  const cur=sel.open?null:(mi.find(i=>i.id===sel.issue)||mi[0]);if(cur)sel.issue=cur.id;sel.stype=sel.open||(cur&&cur.stator_type)||null;
+  const sm='font-size:10px;color:#98a2b3;display:block;margin-top:2px',gn='color:#0e9f83;font-weight:700';
+  h+='<div class="card"><div class="lab">Stators</div><div id="st">'+mi.map(i=>{const st=i.stator_type||'';return '<div class="tile'+(cur&&i.id===cur.id?' on':'')+'" data-i="'+i.id+'"><span class="r"></span><div class="t"><b>'+esc(i.winding_type)+'</b><small style="'+sm+'">Order #'+esc(i.order_no)+' | stamping available '+fmt(Math.max(0,(H.stamp[st]||{bal:0}).bal))+'</small></div><span class="n" style="'+gn+'">'+fmt(Math.max(0,(H.holds[st]||{held:0}).held))+'</span></div>'}).join('')+(oth.length?'<div class="lab" style="margin-top:14px">Opening stock (no order)</div>'+oth.map(o=>'<div class="tile'+(sel.open===o[0]?' on':'')+'" data-o="'+esc(o[0])+'"><span class="r"></span><div class="t"><b>'+esc(o[0])+'</b><small style="'+sm+'">Opening stock | stamping available 0</small></div><span class="n" style="'+gn+'">'+fmt(o[1])+'</span></div>').join(''):'')+'</div></div>'}
+ }
  h+='<div class="card qty"><div class="lab">'+(give?'Stators given':'Stators made')+'</div><input class="num" id="q" type="number" inputmode="numeric" min="1" placeholder="0"><div class="qs">'+
   (give?'<button data-a="100">+100</button><button data-a="500">+500</button><button data-all="'+Math.max(0,hold)+'">All '+fmt(Math.max(0,hold))+'</button>':'<button data-a="100">+100</button><button data-a="500">+500</button><button data-a="1000">+1,000</button>')+'</div>'+
   (give?'<div class="info"><span>You hold</span><b id="hv">'+fmt(hold)+'</b></div><div class="info" style="border:0;margin:0;padding-top:4px"><span id="hk">After giving</span><b id="ha">'+fmt(hold)+'</b></div>':'<div class="info"><span>Made today so far</span><b>'+fmt(H.madeToday)+'</b></div>')+'</div>';
  $('main').innerHTML=h;
  setBar('<button class="btn'+(give?' dk':'')+'" id="go">'+(give?'Give':'Save')+'</button>');
- if($('st'))$('st').querySelectorAll('.tile:not(.dim)').forEach(b=>b.onclick=()=>{sel.stype=b.dataset.v;entryForm(kind)});
- if($('sa'))$('sa').onclick=()=>{showAll=true;entryForm(kind)};
+ if($('st'))$('st').querySelectorAll('.tile:not(.dim)').forEach(b=>b.onclick=()=>{if(give)sel.stype=b.dataset.v;else if(b.dataset.o!==undefined)sel.open=b.dataset.o;else{sel.issue=+b.dataset.i;sel.open=null}entryForm(kind)});
  if($('is'))$('is').querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.issue=+b.dataset.v;if(!give){const x=H.issues.find(i=>i.id===sel.issue);if(x&&x.stator_type)sel.stype=x.stator_type}entryForm(kind)});
  const upd=()=>{if(give){const q=+$('q').value||0;$('ha').textContent=fmt(hold-q);$('ha').style.color=(hold-q<0)?'#b3261e':''}};
  $('q').oninput=upd;
  document.querySelectorAll('.qs button').forEach(b=>b.onclick=()=>{const cur=+$('q').value||0;$('q').value=b.dataset.all!==undefined?+b.dataset.all:cur+(+b.dataset.a);upd()});
  $('go').onclick=async()=>{const q=+$('q').value;$('err').textContent='';
-  if(!sel.stype){$('err').textContent='Choose the winding type';return}
+  if(!sel.stype){$('err').textContent=give?'Choose the stamping type':'No order issued';return}
   if(!(q>0)||q!==Math.floor(q)){$('err').textContent='Enter a whole number above 0';return}
   $('go').disabled=true;
-  try{await api('/api/c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:give?'give':'made',stype:sel.stype,qty:q,issue_id:sel.issue})});
+  try{await api('/api/c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:give?'give':'made',stype:sel.stype,qty:q,issue_id:sel.open?null:sel.issue,opening:(!give&&sel.open)?1:0})});
    toast('Saved');await home();entryForm(kind)}catch(e){$('err').textContent=e.message;$('go').disabled=false}}
 }
 async function report(){
