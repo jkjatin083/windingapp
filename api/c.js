@@ -46,6 +46,14 @@ async function stampStock(sql, me) {
   return o;
 }
 
+// All stamping/winding names Midland has (for the "Show all winding" list on the Made screen)
+async function allTypes(sql) {
+  try {
+    const r = await sql`SELECT DISTINCT name FROM inventory_items WHERE category IN ('STAMPING', 'AIRY STAMPING') ORDER BY name`;
+    return r.map(x => x.name);
+  } catch (e) { return []; }
+}
+
 async function openIssues(sql, me) {
   let rows = [];
   try {
@@ -85,7 +93,7 @@ export default async function handler(req, res) {
       if (view === 'home') {
         const iss = await openIssues(sql, me);
         const t = await sql`SELECT COALESCE(SUM(qty),0)::float AS v FROM wa_entries WHERE deleted = false AND contractor = ${me} AND kind = 'wound' AND d = ${today}::date`;
-        return res.status(200).json({ me, today, types: await stampTypes(sql, me), holds: await holds(sql, me), stamp: await stampStock(sql, me).catch(() => ({})), issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v });
+        return res.status(200).json({ me, today, types: await stampTypes(sql, me), holds: await holds(sql, me), stamp: await stampStock(sql, me).catch(() => ({})), issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v, allTypes: await allTypes(sql) });
       }
       if (view === 'report') {
         const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from || '') ? req.query.from : START;
@@ -141,11 +149,6 @@ export default async function handler(req, res) {
         issue = iss.rows.find(x => x.id === id) || (iss.rows.length === 1 ? iss.rows[0] : null);
         if (!issue) return res.status(400).json({ error: 'Choose the order' });
         if (kind === 'wound' && qty > issue.left) return res.status(409).json({ error: 'Only ' + issue.left + ' left in order ' + issue.order_no });
-      }
-      if (kind === 'wound') {
-        // stators made cannot use more stamping than the contractor holds of this type
-        const st = (await stampStock(sql, me).catch(() => ({})))[stype] || { bal: 0 };
-        if (qty > st.bal) return res.status(409).json({ error: 'You have only ' + st.bal + ' of ' + stype + ' stamping left. Cannot make ' + qty });
       }
       if (kind === 'sent') {
         const h = (await holds(sql, me))[stype] || { held: 0 };
