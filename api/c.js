@@ -26,13 +26,17 @@ async function holds(sql, me) {
 }
 
 // Stamping with this contractor, per type: received (Midland OUTWARD to this contractor + manual receipts + transfers) minus stators made
-async function stampStock(sql, me) {
+// One shared read of Midland stamping OUTWARD rows (used by both stampTypes and stampStock)
+async function midOut(sql) {
+  return await sql`SELECT t.party_name, t.quantity::float AS q, i.name AS item FROM inventory_transactions t JOIN inventory_items i ON i.id = t.item_id
+      WHERE upper(t.transaction_type) = 'OUTWARD' AND i.category IN ('STAMPING', 'AIRY STAMPING') AND t.transaction_date >= ${START}::date`;
+}
+async function stampStock(sql, me, mid) {
   const o = {};
   const g = t => o[t] || (o[t] = { recv: 0, made: 0, bal: 0 });
   try {
-    const m = await sql`SELECT t.party_name, t.quantity::float AS q, i.name AS item FROM inventory_transactions t JOIN inventory_items i ON i.id = t.item_id
-      WHERE upper(t.transaction_type) = 'OUTWARD' AND i.category IN ('STAMPING', 'AIRY STAMPING') AND t.transaction_date >= ${START}::date`;
-    m.forEach(x => { if (normParty(x.party_name) === me) g(x.item).recv += x.q; });
+    const m = mid !== undefined ? await mid : await midOut(sql);
+    if (m) m.forEach(x => { if (normParty(x.party_name) === me) g(x.item).recv += x.q; });
   } catch (e) { /* Midland not readable */ }
   const w = await sql`SELECT kind, contractor, party, stype, qty::float AS q FROM wa_entries
     WHERE deleted = false AND d >= ${START}::date AND stype IS NOT NULL
@@ -69,14 +73,13 @@ async function openIssues(sql, me) {
   return { rows: rows.map(r => ({ ...r, left: Math.max(0, r.qty - r.wound) })).filter(r => r.left > 0 || r.given < r.wound) };
 }
 
-async function stampTypes(sql, me) {
+async function stampTypes(sql, me, mid) {
   const set = new Set();
   const a = await sql`SELECT DISTINCT stype FROM wa_entries WHERE deleted = false AND contractor = ${me} AND stype IS NOT NULL AND kind IN ('wound','stamp_in','transfer','sent')`;
   a.forEach(x => x.stype && set.add(x.stype));
   try {
-    const m = await sql`SELECT t.party_name, i.name AS item FROM inventory_transactions t JOIN inventory_items i ON i.id = t.item_id
-      WHERE upper(t.transaction_type) = 'OUTWARD' AND i.category IN ('STAMPING', 'AIRY STAMPING') AND t.transaction_date >= ${START}::date`;
-    m.forEach(x => { if (normParty(x.party_name) === me) set.add(x.item); });
+    const m = mid !== undefined ? await mid : await midOut(sql);
+    if (m) m.forEach(x => { if (normParty(x.party_name) === me) set.add(x.item); });
   } catch (e) { /* Midland not readable: use own entries only */ }
   return [...set].sort();
 }
@@ -91,9 +94,16 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const view = String(req.query.view || 'home');
       if (view === 'home') {
-        const iss = await openIssues(sql, me);
-        const t = await sql`SELECT COALESCE(SUM(qty),0)::float AS v FROM wa_entries WHERE deleted = false AND contractor = ${me} AND kind = 'wound' AND d = ${today}::date`;
-        return res.status(200).json({ me, today, types: await stampTypes(sql, me), holds: await holds(sql, me), stamp: await stampStock(sql, me).catch(() => ({})), issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v, allTypes: await allTypes(sql) });
+        const midP = midOut(sql).then(r => r, () => null);
+        const [iss, t, types, hold, stamp, all] = await Promise.all([
+          openIssues(sql, me),
+          sql`SELECT COALESCE(SUM(qty),0)::float AS v FROM wa_entries WHERE deleted = false AND contractor = ${me} AND kind = 'wound' AND d = ${today}::date`,
+          stampTypes(sql, me, midP),
+          holds(sql, me),
+          stampStock(sql, me, midP).catch(() => ({})),
+          allTypes(sql)
+        ]);
+        return res.status(200).json({ me, today, types, holds: hold, stamp, issues: iss.rows, issueErr: iss.err || null, madeToday: t[0].v, allTypes: all });
       }
       if (view === 'report') {
         const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from || '') ? req.query.from : START;
