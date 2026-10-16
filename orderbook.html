@@ -32,6 +32,11 @@ nav a{text-align:center;font-size:11.5px;color:#98a2b3;font-weight:500;text-deco
 .tile{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);margin-bottom:8px;cursor:pointer}.tile .r{width:20px;height:20px;border-radius:50%;border:2px solid #d0d5dd;flex:none}.tile .t2{flex:1;font-weight:600;font-size:15px}.tile small{color:var(--mute);font-size:12px}.tile.on{border-color:var(--a);background:var(--a2)}.tile.on .r{border-color:var(--a);background:radial-gradient(var(--a) 42%,transparent 46%)}
 label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:14px 0 6px}
 input{width:100%;font:inherit;font-size:22px;font-weight:700;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;outline:none}
+.ef{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.ef select,.ef input{font:inherit;font-size:13px;font-weight:500;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:#fff;width:auto;max-width:48%}
+.ec{background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:8px}.ec .a{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600}.ec small{display:block;color:var(--mute);font-size:12px;margin-top:3px}
+.ec .b{display:flex;gap:8px;margin-top:9px}.ec button,.sheet .bt{font:inherit;font-size:13px;font-weight:600;padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}.ec button.dl{color:var(--red)}
+.sheet .bt.p{background:var(--a);color:#fff;border-color:var(--a)}.sheet .bt.r{background:var(--red);color:#fff;border-color:var(--red)}.sheet .er{color:var(--red);font-size:13px;margin-top:10px;min-height:16px}
+.ech{display:inline-block;padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;color:var(--mute);margin:0 6px 8px 0;cursor:pointer}.ech.on{background:var(--a2);border-color:var(--a);color:var(--a)}
 </style></head><body><div class="w"><div id="toast"></div>
 <div class="top"><div class="who"><div class="av">J</div><div><small>Admin</small><b>Jatin</b></div></div><a class="chipd" href="admin.html">PINs</a></div>
 <h1 id="ttl">Overview</h1><div id="main"></div></div>
@@ -39,7 +44,8 @@ input{width:100%;font:inherit;font-size:22px;font-weight:700;padding:12px 14px;b
 <a href="#overview" id="n_overview"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l8-7 8 7v8H3z"/></svg>Overview</a>
 <a href="#book" id="n_book"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h12v14H5zM8 8h6M8 12h6"/></svg>Orders</a>
 <a href="#demand" id="n_demand"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18V9M11 18V4M18 18v-6"/></svg>Contractors</a>
-<a href="#rotor" id="n_rotor"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M11 7v8"/></svg>Rotor</a></nav>
+<a href="#rotor" id="n_rotor"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M11 7v8"/></svg>Rotor</a>
+<a href="#entries" id="n_entries"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h14M4 11h14M4 16h9"/></svg>Entries</a></nav>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
@@ -129,7 +135,35 @@ function overview(){
  if(sk.length)h+='<div class="card"><div class="lab">Stamping demand vs stock with contractors</div>'+sk.map(k=>bi(s[k].n,Math.min(s[k].have,s[k].need),s[k].need,s[k].have>=s[k].need?'Enough stamping with contractors':'Short '+fmt(s[k].need-s[k].have)+' (have '+fmt(s[k].have)+')',s[k].have<s[k].need)).join('')+'</div>';
  $("main").innerHTML=h;
 }
-function view(){const p=(location.hash||"#overview").slice(1);["overview","book","demand","rotor"].forEach(k=>$("n_"+k).className=k===p?"on":"");$("ttl").textContent=({overview:"Overview",book:"Order Book",demand:"Contractors",rotor:"Rotor"})[p]||"Overview";({overview,book,demand,rotor}[p]||overview)()}
+function view(){const p=(location.hash||"#overview").slice(1);["overview","book","demand","rotor","entries"].forEach(k=>$("n_"+k).className=k===p?"on":"");$("ttl").textContent=({overview:"Overview",book:"Order Book",demand:"Contractors",rotor:"Rotor",entries:"Entries"})[p]||"Overview";({overview,book,demand,rotor,entries}[p]||overview)()}
+
+// ---- Entries tab (admin: edit qty/date, soft delete; no add) ----
+const EF={app:"all",who:"",type:"",from:"",to:""};let ER=null;
+async function eapi(opt){opt=opt||{};opt.headers=Object.assign({},opt.headers||{},{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"});const r=await fetch(opt.url||"/api/e",opt);if(r.status===401){localStorage.removeItem("wa_admin");location.href="index.html";return}const j=await r.json();if(!r.ok)throw new Error(j.error||"error");return j}
+async function entries(){
+ const q=Object.keys(EF).filter(k=>EF[k]&&!(k==="app"&&EF[k]==="all")).map(k=>k+"="+encodeURIComponent(EF[k])).join("&");
+ $("main").innerHTML='<div class="card">Loading...</div>';
+ try{ER=await eapi({url:"/api/e"+(q?"?"+q:"")})}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>';return}
+ const ch=[["all","All"],["contractors","Contractors"],["motors","Motors"],["deleted","Deleted"]];
+ let h=ch.map(c=>'<span class="ech'+(EF.app===c[0]?" on":"")+'" data-app="'+c[0]+'">'+c[1]+'</span>').join("");
+ h+='<div class="ef"><select id="ef_who"><option value="">Everyone</option>'+ER.people.map(p=>'<option'+(EF.who===p?" selected":"")+'>'+esc(p)+'</option>').join("")+'</select><select id="ef_type"><option value="">All types</option>'+ER.types.map(p=>'<option'+(EF.type===p?" selected":"")+'>'+esc(p)+'</option>').join("")+'</select><input type="date" id="ef_from" value="'+EF.from+'"><input type="date" id="ef_to" value="'+EF.to+'"></div>';
+ h+='<div style="font-size:12px;color:var(--mute);margin-bottom:8px">'+ER.total+' entries'+(ER.total>ER.rows.length?' (showing latest '+ER.rows.length+')':'')+'</div>';
+ h+=ER.rows.length?ER.rows.map(r=>'<div class="ec"><div class="a"><span>'+esc(r.text)+'</span><span>'+fmt(r.qty)+'</span></div><small>'+esc(r.contractor)+(r.stype?' - '+esc(r.stype):'')+' - '+dm(r.d)+(r.kuppa?' - kuppa '+fmt(r.kuppa):'')+'</small>'+(r.deleted?'<small>Deleted</small>':'<div class="b"><button data-ed="'+r.id+'">Edit</button><button class="dl" data-dl="'+r.id+'">Delete</button></div>')+'</div>').join(""):'<div class="card">No entries</div>';
+ $("main").innerHTML=h;
+ document.querySelectorAll(".ech").forEach(e=>e.onclick=()=>{EF.app=e.dataset.app;entries()});
+ [["who","ef_who"],["type","ef_type"],["from","ef_from"],["to","ef_to"]].forEach(a=>{$(a[1]).onchange=()=>{EF[a[0]]=$(a[1]).value;entries()}});
+ document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>eSheet(+b.dataset.ed,"edit"));
+ document.querySelectorAll("[data-dl]").forEach(b=>b.onclick=()=>eSheet(+b.dataset.dl,"delete"));
+}
+function eSheet(id,mode){
+ const r=ER.rows.find(x=>x.id===id);if(!r)return;
+ const o=document.createElement("div");o.className="ov";
+ const body=mode==="edit"?'<h3 style="margin:0 0 4px">Edit entry</h3><div style="color:var(--mute);font-size:13px">'+esc(r.text)+' - '+esc(r.contractor)+(r.stype?' - '+esc(r.stype):'')+'</div><label>Quantity</label><input id="eq" type="number" inputmode="numeric" value="'+r.qty+'"><label>Date</label><input id="ed" type="date" value="'+r.d+'" max="'+new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"})+'" min="2026-10-01"><div class="er" id="eer"></div><div style="display:flex;gap:8px;margin-top:12px"><button class="bt p" id="ok" style="flex:1">Save</button><button class="bt" id="no">Cancel</button></div>'
+ :'<h3 style="margin:0 0 4px">Delete this entry?</h3><div style="font-size:14px;margin-top:6px">'+esc(r.text)+' - '+fmt(r.qty)+'<br><span style="color:var(--mute);font-size:13px">'+esc(r.contractor)+(r.stype?' - '+esc(r.stype):'')+' - '+dm(r.d)+'</span></div><div style="color:var(--mute);font-size:12.5px;margin-top:8px">It is hidden from all apps and kept in the Deleted list and audit log.</div><div class="er" id="eer"></div><div style="display:flex;gap:8px;margin-top:12px"><button class="bt r" id="ok" style="flex:1">Delete</button><button class="bt" id="no">Cancel</button></div>';
+ o.innerHTML='<div class="sheet">'+body+'</div>';document.body.appendChild(o);
+ $("no").onclick=()=>o.remove();o.onclick=e=>{if(e.target===o)o.remove()};
+ $("ok").onclick=async()=>{$("ok").disabled=true;try{await eapi({method:"POST",body:JSON.stringify(mode==="edit"?{action:"edit",id,qty:$("eq").value,d:$("ed").value}:{action:"delete",id})});o.remove();toast(mode==="edit"?"Saved":"Deleted");entries()}catch(e){$("eer").textContent=e.message;$("ok").disabled=false}}
+}
 async function load(){D=await api()}
 async function route(){try{await load();view()}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
 window.onhashchange=()=>D?view():route();route();
