@@ -69,7 +69,7 @@ async function api(url,opt){opt=opt||{};opt.headers=Object.assign({},opt.headers
  const j=await r.json();if(!r.ok)throw new Error(j.error||'error');return j}
 $('lo').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');location.href='index.html'};
 $('av').textContent=(ME||'?')[0];$('who').textContent=ME;
-let H=null,sel={stype:null,issue:null},rtab='date';
+let showAll=false,H=null,sel={stype:null,issue:null},rtab='date';
 async function home(){H=await api('/api/c?view=home');
  $('dt').textContent=dm(H.today);
  if(!sel.stype||!H.types.includes(sel.stype))sel.stype=H.types[0]||null;
@@ -86,11 +86,13 @@ function entryForm(kind){
  if(H.issues.length>1)h+='<div class="oc" id="is">'+H.issues.map(i=>'<button data-v="'+i.id+'" class="'+(i.id===sel.issue?'on':'')+'">#'+esc(i.order_no)+' | '+esc(i.winding_type)+'</button>').join('')+'</div>';
  h+=orderCard(od);
  const bal=t=>give?((H.holds[t]||{held:0}).held):((H.stamp[t]||{bal:0}).bal);
- const names=Array.from(new Set(Object.keys(H.stamp||{}).concat(give?Object.keys(H.holds||{}):[]).concat(od&&od.stator_type?[od.stator_type]:[])));
- const opts=names.map(t=>[t,bal(t)]).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0]));
- if(!sel.stype||bal(sel.stype)<=0){const okk=od&&od.stator_type&&bal(od.stator_type)>0?od.stator_type:(opts.find(o=>o[1]>0)||[null])[0];sel.stype=okk}
- h+='<div class="card"><div class="lab">'+(give?'Stators you hold, by stamping':'Stamping used')+'</div>';
- h+=opts.length?'<div id="st">'+opts.map(o=>'<div class="tile'+(o[0]===sel.stype?' on':'')+(o[1]<=0?' dim':'')+'" data-v="'+esc(o[0])+'"><span class="r"></span><div class="t"><b>'+esc(o[0])+'</b><small>'+(o[1]>0?(give?'ready to give':'from Midland'):'none with you')+'</small></div><span class="n">'+fmt(Math.max(0,o[1]))+'</span></div>').join('')+'</div>':'<div class="note">No stamping with you yet. Ask Jatin.</div>';
+ const names=Array.from(new Set(Object.keys(H.stamp||{}).concat(give?Object.keys(H.holds||{}):(H.types||[])).concat(!give&&showAll?(H.allTypes||[]):[]).concat(od&&od.stator_type?[od.stator_type]:[])));
+ const opts=names.map(t=>[t,bal(t)]).sort((x,y)=>give?(y[1]-x[1]||x[0].localeCompare(y[0])):x[0].localeCompare(y[0]));
+ if(!give&&(!sel.stype||!names.includes(sel.stype))){sel.stype=od&&od.stator_type?od.stator_type:(opts[0]||[null])[0]}
+ if(give&&(!sel.stype||bal(sel.stype)<=0)){const okk=od&&od.stator_type&&bal(od.stator_type)>0?od.stator_type:(opts.find(o=>o[1]>0)||[null])[0];sel.stype=okk}
+ h+='<div class="card"><div class="lab">'+(give?'Stators you hold, by stamping':'Winding used')+'</div>';
+ h+=opts.length?'<div id="st">'+opts.map(o=>'<div class="tile'+(o[0]===sel.stype?' on':'')+(give&&o[1]<=0?' dim':'')+'" data-v="'+esc(o[0])+'"><span class="r"></span><div class="t"><b>'+esc(o[0])+'</b>'+(give?'<small>'+(o[1]>0?'ready to give':'none with you')+'</small></div><span class="n">'+fmt(Math.max(0,o[1]))+'</span></div>':'<small style="font-size:10px;color:#98a2b3">stamping available '+fmt(Math.max(0,o[1]))+'</small></div></div>')).join('')+'</div>':'<div class="note">No winding types yet.</div>';
+ if(!give&&!showAll&&(H.allTypes||[]).length>names.length)h+='<div class="note" id="sa" style="text-align:center;color:var(--a);font-weight:600;cursor:pointer;margin-top:10px">Show all winding</div>';
  h+='</div>';
  if(!give&&od&&od.stator_type&&sel.stype&&sel.stype!==od.stator_type)h+='<div class="warn"><b>Different from order.</b> Using '+esc(sel.stype)+' for an order of '+esc(od.stator_type)+'. This is saved with the entry so Jatin can see it.</div>';
  const hold=(H.holds[sel.stype]||{held:0}).held,mx=give?hold:((H.stamp[sel.stype]||{bal:0}).bal);
@@ -100,14 +102,14 @@ function entryForm(kind){
  $('main').innerHTML=h;
  setBar('<button class="btn'+(give?' dk':'')+'" id="go">'+(give?'Give':'Save')+'</button>');
  if($('st'))$('st').querySelectorAll('.tile:not(.dim)').forEach(b=>b.onclick=()=>{sel.stype=b.dataset.v;entryForm(kind)});
+ if($('sa'))$('sa').onclick=()=>{showAll=true;entryForm(kind)};
  if($('is'))$('is').querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.issue=+b.dataset.v;entryForm(kind)});
  const upd=()=>{if(give){const q=+$('q').value||0;$('ha').textContent=fmt(hold-q);$('ha').style.color=(hold-q<0)?'#b3261e':''}};
  $('q').oninput=upd;
  document.querySelectorAll('.qs button').forEach(b=>b.onclick=()=>{const cur=+$('q').value||0;$('q').value=b.dataset.all!==undefined?+b.dataset.all:cur+(+b.dataset.a);upd()});
  $('go').onclick=async()=>{const q=+$('q').value;$('err').textContent='';
-  if(!sel.stype){$('err').textContent='Choose the stamping type';return}
+  if(!sel.stype){$('err').textContent='Choose the winding type';return}
   if(!(q>0)||q!==Math.floor(q)){$('err').textContent='Enter a whole number above 0';return}
-  if(!give&&q>((H.stamp[sel.stype]||{bal:0}).bal)){$('err').textContent='You have only '+fmt((H.stamp[sel.stype]||{bal:0}).bal)+' of '+sel.stype+' stamping left';return}
   $('go').disabled=true;
   try{await api('/api/c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:give?'give':'made',stype:sel.stype,qty:q,issue_id:sel.issue})});
    toast('Saved');await home();entryForm(kind)}catch(e){$('err').textContent=e.message;$('go').disabled=false}}
