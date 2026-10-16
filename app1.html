@@ -91,7 +91,7 @@ function entryForm(kind){
  if(!give&&(!sel.stype||!names.includes(sel.stype))){sel.stype=od&&od.stator_type?od.stator_type:(opts[0]||[null])[0]}
  if(give&&(!sel.stype||bal(sel.stype)<=0)){const okk=od&&od.stator_type&&bal(od.stator_type)>0?od.stator_type:(opts.find(o=>o[1]>0)||[null])[0];sel.stype=okk}
  h+='<div class="card"><div class="lab">'+(give?'Stators you hold, by stamping':'Winding used')+'</div>';
- h+=opts.length?'<div id="st">'+opts.map(o=>'<div class="tile'+(o[0]===sel.stype?' on':'')+(give&&o[1]<=0?' dim':'')+'" data-v="'+esc(o[0])+'"><span class="r"></span><div class="t"><b>'+esc(o[0])+'</b>'+(give?'<small>'+(o[1]>0?'ready to give':'none with you')+'</small></div><span class="n">'+fmt(Math.max(0,o[1]))+'</span></div>':'<small style="font-size:10px;color:#98a2b3">stamping available '+fmt(Math.max(0,o[1]))+'</small></div></div>')).join('')+'</div>':'<div class="note">No winding types yet.</div>';
+ h+=opts.length?'<div id="st">'+opts.map(o=>'<div class="tile'+(o[0]===sel.stype?' on':'')+(give&&o[1]<=0?' dim':'')+'" data-v="'+esc(o[0])+'"><span class="r"></span><div class="t"><b>'+esc(o[0])+'</b>'+(give?'<small>'+(o[1]>0?'ready to give':'none with you')+'</small></div><span class="n">'+fmt(Math.max(0,o[1]))+'</span></div>':'<small style="font-size:10px;color:#98a2b3">stamping available '+fmt(Math.max(0,o[1]))+'</small></div><span class="n" style="color:#0e9f83;font-weight:700">'+fmt(Math.max(0,(H.holds[o[0]]||{held:0}).held))+'</span></div>')).join('')+'</div>':'<div class="note">No winding types yet.</div>';
  if(!give&&!showAll&&(H.allTypes||[]).length>names.length)h+='<div class="note" id="sa" style="text-align:center;color:var(--a);font-weight:600;cursor:pointer;margin-top:10px">Show all winding</div>';
  h+='</div>';
  if(!give&&od&&od.stator_type&&sel.stype&&sel.stype!==od.stator_type)h+='<div class="warn"><b>Different from order.</b> Using '+esc(sel.stype)+' for an order of '+esc(od.stator_type)+'. This is saved with the entry so Jatin can see it.</div>';
@@ -103,7 +103,7 @@ function entryForm(kind){
  setBar('<button class="btn'+(give?' dk':'')+'" id="go">'+(give?'Give':'Save')+'</button>');
  if($('st'))$('st').querySelectorAll('.tile:not(.dim)').forEach(b=>b.onclick=()=>{sel.stype=b.dataset.v;entryForm(kind)});
  if($('sa'))$('sa').onclick=()=>{showAll=true;entryForm(kind)};
- if($('is'))$('is').querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.issue=+b.dataset.v;entryForm(kind)});
+ if($('is'))$('is').querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.issue=+b.dataset.v;if(!give){const x=H.issues.find(i=>i.id===sel.issue);if(x&&x.stator_type)sel.stype=x.stator_type}entryForm(kind)});
  const upd=()=>{if(give){const q=+$('q').value||0;$('ha').textContent=fmt(hold-q);$('ha').style.color=(hold-q<0)?'#b3261e':''}};
  $('q').oninput=upd;
  document.querySelectorAll('.qs button').forEach(b=>b.onclick=()=>{const cur=+$('q').value||0;$('q').value=b.dataset.all!==undefined?+b.dataset.all:cur+(+b.dataset.a);upd()});
