@@ -119,13 +119,14 @@ export default async function handler(req, res) {
           COALESCE((SELECT SUM(i.qty) FROM ca_issues i WHERE i.order_id = o.id),0)::int AS issued
         FROM ca_orders o ORDER BY o.id DESC LIMIT 100`;
       const opt = await sql`SELECT kind, val FROM ca_options ORDER BY val`;
+      const custRows = await sql`SELECT customer FROM ca_orders WHERE cancelled = false AND customer <> '' GROUP BY customer ORDER BY MAX(id) DESC LIMIT 500`;
       const mid = await midlandTypes(sql);
       const stamps = mid.stamps, rotors = mid.rotors;
       let pipe = []; try { pipe = await pipeline(sql, orders.filter(o => !o.cancelled)); } catch (e) { /* tables or entries not ready */ }
       // Closed = every stage done, incl. all motors dispatched for the full order qty
       orders.forEach(o => { const p = pipe.find(x => x.id === o.id); o.closed = !!(p && p.stages.every(st => st.done)); });
       let overview = null; try { overview = await overviewData(sql); } catch (e) { overview = { error: String(e.message || e) }; }
-      return res.status(200).json({ orders, pipe, overview, winding: opt.filter(x => x.kind === 'winding').map(x => x.val), motor: Array.from(new Set(mid.motors.concat(opt.filter(x => x.kind === 'motor').map(x => x.val)))), stamps, rotors });
+      return res.status(200).json({ orders, customers: custRows.map(r => r.customer), pipe, overview, winding: opt.filter(x => x.kind === 'winding').map(x => x.val), motor: Array.from(new Set(mid.motors.concat(opt.filter(x => x.kind === 'motor').map(x => x.val)))), stamps, rotors });
     }
     if (req.method === 'POST') {
       if (me !== 'Sandeep') return res.status(403).json({ error: 'Only Sandeep adds or edits orders' });
