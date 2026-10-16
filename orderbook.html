@@ -145,11 +145,12 @@ async function entries(){
  $("main").innerHTML='<div class="card">Loading...</div>';
  try{ER=await eapi({url:"/api/e"+(q?"?"+q:"")})}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>';return}
  const ch=[["all","All"],["contractors","Contractors"],["motors","Motors"],["deleted","Deleted"]];
- let h=ch.map(c=>'<span class="ech'+(EF.app===c[0]?" on":"")+'" data-app="'+c[0]+'">'+c[1]+'</span>').join("");
+ let h='<div style="text-align:right;margin-bottom:10px"><button id="addb" style="font:inherit;font-size:14px;font-weight:600;padding:9px 18px;border-radius:20px;border:0;background:var(--a);color:#fff;cursor:pointer">+ Add entry</button></div>'+ch.map(c=>'<span class="ech'+(EF.app===c[0]?" on":"")+'" data-app="'+c[0]+'">'+c[1]+'</span>').join("");
  h+='<div class="ef"><select id="ef_who"><option value="">Everyone</option>'+ER.people.map(p=>'<option'+(EF.who===p?" selected":"")+'>'+esc(p)+'</option>').join("")+'</select><select id="ef_type"><option value="">All types</option>'+ER.types.map(p=>'<option'+(EF.type===p?" selected":"")+'>'+esc(p)+'</option>').join("")+'</select><input type="date" id="ef_from" value="'+EF.from+'"><input type="date" id="ef_to" value="'+EF.to+'"></div>';
  h+='<div style="font-size:12px;color:var(--mute);margin-bottom:8px">'+ER.total+' entries'+(ER.total>ER.rows.length?' (showing latest '+ER.rows.length+')':'')+'</div>';
  h+=ER.rows.length?ER.rows.map(r=>'<div class="ec"><div class="a"><span>'+esc(r.text)+'</span><span>'+fmt(r.qty)+'</span></div><small>'+esc(r.contractor)+(r.stype?' - '+esc(r.stype):'')+' - '+dm(r.d)+(r.kuppa?' - kuppa '+fmt(r.kuppa):'')+'</small>'+(r.deleted?'<small>Deleted</small>':'<div class="b"><button data-ed="'+r.id+'">Edit</button><button class="dl" data-dl="'+r.id+'">Delete</button></div>')+'</div>').join(""):'<div class="card">No entries</div>';
  $("main").innerHTML=h;
+ $("addb").onclick=()=>aSheet();
  document.querySelectorAll(".ech").forEach(e=>e.onclick=()=>{EF.app=e.dataset.app;entries()});
  [["who","ef_who"],["type","ef_type"],["from","ef_from"],["to","ef_to"]].forEach(a=>{$(a[1]).onchange=()=>{EF[a[0]]=$(a[1]).value;entries()}});
  document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>eSheet(+b.dataset.ed,"edit"));
@@ -163,6 +164,16 @@ function eSheet(id,mode){
  o.innerHTML='<div class="sheet">'+body+'</div>';document.body.appendChild(o);
  $("no").onclick=()=>o.remove();o.onclick=e=>{if(e.target===o)o.remove()};
  $("ok").onclick=async()=>{$("ok").disabled=true;try{await eapi({method:"POST",body:JSON.stringify(mode==="edit"?{action:"edit",id,qty:$("eq").value,d:$("ed").value}:{action:"delete",id})});o.remove();toast(mode==="edit"?"Saved":"Deleted");entries()}catch(e){$("eer").textContent=e.message;$("ok").disabled=false}}
+}
+
+function aSheet(){
+ const P=ER.pick,today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
+ const sel=(id,ph,list)=>'<select id="'+id+'" style="width:100%;font:inherit;font-size:16px;font-weight:600;padding:13px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff"><option value="">'+ph+'</option>'+list.map(x=>'<option value="'+esc(x[0])+'">'+esc(x[1])+'</option>').join("")+'</select>';
+ const o=document.createElement("div");o.className="ov";
+ o.innerHTML='<div class="sheet" style="max-height:92vh;overflow:auto"><h3 style="margin:0 0 4px">Add entry</h3><div style="color:var(--mute);font-size:12.5px">Admin only. Made or Given to Pandey ji.</div><label>Contractor</label>'+sel("ac","Select contractor",P.contractors.map(x=>[x,x]))+'<label>Entry type</label>'+sel("at","Select type",[["made","Made"],["given","Given to Pandey ji"]])+'<label>Winding type</label>'+sel("aw","Select winding",P.types.map(x=>[x,x]))+'<label>Quantity</label><input id="aq" type="number" inputmode="numeric" placeholder="0"><label>Date</label><input id="ad" type="date" value="'+today+'" min="2026-10-01" max="'+today+'"><div style="color:var(--mute);font-size:12px;margin-top:10px">Blocked if a balance would go negative or it repeats an entry. Saved in the audit log.</div><div class="er" id="eer"></div><div style="display:flex;gap:8px;margin-top:12px"><button class="bt p" id="ok" style="flex:1">Add entry</button><button class="bt" id="no">Cancel</button></div></div>';
+ document.body.appendChild(o);
+ $("no").onclick=()=>o.remove();o.onclick=e=>{if(e.target===o)o.remove()};
+ $("ok").onclick=async()=>{$("ok").disabled=true;try{await eapi({method:"POST",body:JSON.stringify({action:"add",contractor:$("ac").value,entry:$("at").value,stype:$("aw").value,qty:$("aq").value,d:$("ad").value})});o.remove();toast("Added");entries()}catch(e){$("eer").textContent=e.message;$("ok").disabled=false}}
 }
 async function load(){D=await api()}
 async function route(){try{await load();view()}catch(e){$("main").innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
