@@ -67,13 +67,14 @@ function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';set
 async function api(url,opt){opt=opt||{};opt.headers=Object.assign({},opt.headers||{},{Authorization:'Bearer '+TOKEN});
  const r=await fetch(url,opt);if(r.status===401){localStorage.removeItem('wa_token');location.href='index.html';return}
  const j=await r.json();if(!r.ok)throw new Error(j.error||'error');return j}
-$('lo').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');location.href='index.html'};
+$('lo').onclick=e=>{e.preventDefault();localStorage.removeItem('wa_token');localStorage.removeItem('wa_name');localStorage.removeItem('wa_home');location.href='index.html'};
 $('av').textContent=(ME||'?')[0];$('who').textContent=ME;
 let showAll=false,H=null,sel={stype:null,issue:null},rtab='date';
-async function home(){H=await api('/api/c?view=home');
+function applyHome(j){H=j;
  $('dt').textContent=dm(H.today);
  if(!sel.stype||!H.types.includes(sel.stype))sel.stype=H.types[0]||null;
  if(!H.issues.find(x=>x.id===sel.issue))sel.issue=H.issues.length?H.issues[0].id:null}
+async function home(){const j=await api('/api/c?view=home');try{localStorage.setItem('wa_home',JSON.stringify({u:TOKEN.slice(-16),j}))}catch(e){}applyHome(j)}
 function setBar(html){$('bar').innerHTML=html?'<div class="sticky"><div><div class="err" id="err"></div>'+html+'</div></div>':''}
 function orderCard(od){
  if(!od)return '<div class="card"><div class="lab">Order</div><div class="ord"><div><b>No open order</b><small>Ask Jatin to issue an order</small></div></div></div>';
@@ -144,7 +145,12 @@ async function report(){
 async function route(){
  const p=(location.hash||'#made').slice(1);
  ['made','give','report'].forEach(k=>$('n_'+k).className=k===p?'on':'');
- try{if(p==='report')await report();else{await home();entryForm(p==='give'?'give':'made')}}
+ try{if(p==='report')await report();else{
+  const kind=p==='give'?'give':'made';
+  let painted=null;
+  if(!H){try{const c=JSON.parse(localStorage.getItem('wa_home')||'null');if(c&&c.u===TOKEN.slice(-16)&&c.j&&c.j.issues){applyHome(c.j);entryForm(kind);painted=kind}}catch(e){}}
+  await home();
+  if(painted!==kind||!$('q')||!$('q').value)entryForm(kind)}}
  catch(e){$('main').innerHTML='<div class="card"><div class="err">'+esc(e.message)+'</div></div>'}
 }
 window.onhashchange=route;route();
