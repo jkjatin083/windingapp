@@ -46,6 +46,8 @@ nav a{text-align:center;font-size:11.5px;color:#98a2b3;font-weight:500;text-deco
 .ov{position:fixed;inset:0;background:rgba(16,24,40,.4);display:flex;align-items:flex-end;justify-content:center;z-index:30}.sheet{background:#fff;width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:20px}
 .opt{display:flex;justify-content:space-between;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);margin-bottom:8px;cursor:pointer;font-size:15px}.opt.on{border-color:var(--a);background:var(--a2);font-weight:700}
 label.l{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:14px 0 6px}
+
+.sg{position:absolute;left:0;right:0;top:100%;margin-top:-6px;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.12);z-index:5;overflow:hidden}.sg div{padding:12px 14px;font-size:15px;border-top:1px solid var(--line)}.sg div:first-child{border-top:0}.sg div small{display:inline;color:var(--mute);font-size:12px;margin:0 0 0 8px}.sg div:active{background:#f1f5f9}
 </style></head><body><div class="w"><div id="toast"></div>
 <div class="top"><div class="who"><div class="av">S</div><div><small>Sale Orders</small><b id="who"></b></div></div><div><div class="chipd" id="dt"></div><a class="lo" href="#" id="lo">Log out</a></div></div>
 <h1 id="ttl">Overview</h1><div id="main"></div></div>
@@ -85,6 +87,18 @@ function grab(){["customer","due","order_date"].forEach(k=>{if($("f_"+k))F[k]=$(
 function pf(id,label,val,ph){return '<div class="inp" id="'+id+'"><div><small>'+label+'</small><span class="'+(val?"":"ph")+'">'+esc(val||ph||"Choose")+'</span></div><span class="c">&#9662;</span></div>'}
 function lineText(l){return [l.stator_type,l.winding_type,l.motor_type,l.rotor_item?"rotor "+l.rotor_item:""].filter(Boolean).join(" | ")}
 function lineOk(l){return l.stator_type&&l.winding_type&&l.motor_type&&Number(l.qty)>0&&Number(l.qty)===Math.floor(Number(l.qty))}
+function custList(){const m={};(D.customers||[]).forEach(c=>{const k=c.trim().toLowerCase();if(k&&!m[k])m[k]=c.trim()});(D.orders||[]).forEach(o=>{const c=String(o.customer||"").trim(),k=c.toLowerCase();if(k&&!m[k])m[k]=c});return Object.values(m)}
+function custBox(){
+ const inp=$("f_customer");if(!inp)return;const wrap=inp.parentNode;wrap.style.position="relative";
+ const box=document.createElement("div");box.className="sg";box.style.display="none";wrap.appendChild(box);
+ const all=custList();
+ const show=()=>{const q=inp.value.trim().toLowerCase();if(!q){box.style.display="none";return}
+  const hit=all.filter(c=>c.toLowerCase().includes(q)&&c.toLowerCase()!==q).sort((a,b)=>(a.toLowerCase().startsWith(q)?0:1)-(b.toLowerCase().startsWith(q)?0:1)||a.localeCompare(b)).slice(0,6);
+  box.innerHTML=hit.map(c=>'<div data-c="'+esc(c)+'">'+esc(c)+'<small>existing</small></div>').join("");box.style.display=hit.length?"block":"none";
+  box.querySelectorAll("div").forEach(d=>d.onmousedown=d.ontouchstart=e=>{e.preventDefault();inp.value=d.dataset.c;box.style.display="none"})};
+ inp.addEventListener("input",show);inp.addEventListener("focus",show);
+ inp.addEventListener("blur",()=>{setTimeout(()=>{box.style.display="none"},150);const k=inp.value.trim().toLowerCase();const ex=all.find(c=>c.toLowerCase()===k);if(ex)inp.value=ex})
+}
 function form(){
  const L=F.lines,l=L[F.cur],multi=L.length>1;
  let h='<h1 id="ttl2" style="display:none"></h1>';
@@ -95,7 +109,7 @@ function form(){
    '<div class="qty"><div class="lab">Quantity</div><input class="num" id="f_qty" type="number" inputmode="numeric" min="1" value="'+esc(l.qty)+'" placeholder="0"><div class="qs"><button data-a="100">+100</button><button data-a="500">+500</button><button data-a="1000">+1,000</button></div></div></div>'}});
  h+='<div class="addm" id="addm">+ Add another motor</div>';
  h+='<div style="display:flex;gap:10px"><div class="fl" style="flex:1"><small>Due date (optional)</small><input class="f" id="f_due" type="date" value="'+esc(F.due)+'"></div><div class="fl" style="flex:1"><small>Order date</small><input class="f" id="f_order_date" type="date" max="'+todayIST()+'" value="'+esc(F.order_date||todayIST())+'"></div></div>';
- $("main").innerHTML=h;
+ $("main").innerHTML=h;custBox();
  setBar('<button class="btn" id="go">'+(multi?"Save "+L.length+" orders":"Save order")+'</button>');
  $("p_st").onclick=()=>{grab();sheet("Stamping type",D.stamps,l.stator_type,v=>{l.stator_type=v;form()})};
  $("p_wd").onclick=()=>{grab();sheet("Winding type",D.winding,l.winding_type,v=>{l.winding_type=v;form()},"winding")};
