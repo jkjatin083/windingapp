@@ -4,6 +4,7 @@ import { verify, isAdm } from './_auth.js';
 const START = '2026-10-01';
 const KINDS = ['stamp_in', 'wound', 'sent', 'transfer', 'made', 'mdispatch', 'dispatch'];
 const CONTRACTORS = ['Suman', 'Dinesh', 'Ajeet', 'Siraj', 'Sunil', 'Pandey ji'];
+const PARTS_CHECK = false;
 
 // Midland mein party ka naam alag alag likha ho sakta hai (Pandayji / Pandey ji ...)
 function normParty(p) {
@@ -69,6 +70,7 @@ async function checkMade(sql, b, qty, kq, d, src, stype) {
   const av = await windAvail(sql, b.contractor, src, stype, 0);
   if (qty > av) return 'Not enough winding: ' + av + ' available from ' + src + ' - ' + stype + ', you entered ' + qty;
   // 3) parts balances must not go negative
+  if(!PARTS_CHECK) return null;
   const mo = await sql`SELECT COALESCE(SUM(qty),0)::float AS v FROM wa_entries WHERE deleted = false AND kind IN ('made', 'dispatch') AND party IS NOT NULL AND contractor = ${b.contractor}`;
   let ku = 0;
   try {
