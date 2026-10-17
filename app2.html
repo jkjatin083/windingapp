@@ -248,7 +248,7 @@ function problem(src,qty,kq,d){
  if(t.c-M<0)sh.push('capacitor (has '+fmt(t.c)+', needs '+fmt(M)+')');
  if(cvl-2*M<0)sh.push('cover (has '+fmt(cvl)+', needs '+fmt(2*M)+')');
  if(kl-K<0)sh.push('kuppa (has '+fmt(kl)+', needs '+fmt(K)+')');
- if(sh.length)return 'Not enough parts: '+sh.join('; ')+'. Record the parts issue in Midland first.';
+ if(PARTS_CHECK&&sh.length)return 'Not enough parts: '+sh.join('; ')+'. Record the parts issue in Midland first.';
  return null;
 }
 let ORD=[];
