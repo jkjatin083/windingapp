@@ -235,6 +235,7 @@ function report(){
 }
 $('r_from').onchange=$('r_to').onchange=report;
 $('d_d').value=today();
+ const PARTS_CHECK = false;
 function problem(src,qty,kq,d){
  if(!src||!(qty>0))return null;
  const x=windStock().find(y=>y.c+'|'+y.t===src),av=x?x.recv-x.disp:0;
